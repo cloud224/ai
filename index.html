@@ -569,7 +569,7 @@ const PARAM_SCHEMA = [
   {g:'效能與硬體', k:'num_thread', t:'number', min:0, max:256, step:1, label:'CPU 執行緒', help:'0 為自動。建議設為實體核心數。', be:['ollama']},
   {g:'效能與硬體', k:'num_gpu', t:'number', min:-1, max:999, step:1, label:'GPU 層數', help:'-1 為自動，0 為純 CPU，數字越大越多層放顯卡。', be:['ollama']},
   {g:'效能與硬體', k:'num_batch', t:'number', min:16, max:4096, step:16, label:'批次大小 Batch', help:'讀入提示詞時一次處理的 token 數，越大越快但越吃記憶體。', be:['ollama']},
-  {g:'效能與硬體', k:'prefill_chunk', t:'number', min:128, max:4096, step:128, label:'預填區塊大小', help:'瀏覽器模式讀入提示詞的區塊大小，手機建議 512。', be:['webllm']},
+  {g:'效能與硬體', k:'prefill_chunk', t:'number', min:0, max:4096, step:128, label:'預填區塊大小', help:'0 = 使用模型預設（建議）。改小可省一點記憶體，但部分模型（例如 Qwen3.5）改了可能完全不輸出文字。', be:['webllm']},
   {g:'效能與硬體', k:'keep_alive', t:'text', label:'模型常駐時間', help:'用完後模型留在記憶體多久，例如 5m、1h、-1（永久）、0（立即釋放）。', be:['ollama']},
   {g:'效能與硬體', k:'use_mmap', t:'bool', label:'記憶體對映 mmap', help:'開啟可加快載入、降低記憶體尖峰。', be:['ollama']},
   {g:'效能與硬體', k:'use_mlock', t:'bool', label:'鎖定記憶體 mlock', help:'避免模型被換到硬碟，但會長期占用 RAM。', be:['ollama']},
@@ -790,7 +790,7 @@ function computeReco(hw){
   const params = Object.assign({}, SAMPLING_PRESETS.balanced, {
     repeat_last_n: 64, seed:'', max_tokens: mobile ? 1024 : 2048, num_ctx: ctx, history_turns: mobile ? 6 : 10, stop:'', system_prompt:'',
     num_thread: mobile ? 0 : Math.max(1, Math.min(hw.cores, 16)), num_gpu: (hw.webgpu || hw.vram) ? -1 : 0,
-    num_batch: mobile || hw.ram < 8 ? 256 : 512, prefill_chunk: mobile ? 512 : (webBudget >= 4000 ? 2048 : 1024),
+    num_batch: mobile || hw.ram < 8 ? 256 : 512, prefill_chunk: 0,
     keep_alive: mobile ? '5m' : '30m', use_mmap: true, use_mlock: false, stream: true, json_mode: false, think: tier <= 1 ? 'off' : 'auto'
   });
   return { tier, tierName, webBudget, nativeBudget, web, webSorted, native, nativeSorted, params, mobile };
@@ -1008,7 +1008,10 @@ async function loadWebModel(modelId){
     state.engine = null; state.engineModelId = null; updateEnginePill();
     const p = activeParams();
     const ctxMax = (rec.overrides && rec.overrides.context_window_size) || 4096;
-    const chatOpts = { context_window_size: Math.min(Number(p.num_ctx)||ctxMax, ctxMax), prefill_chunk_size: Number(p.prefill_chunk) || 512 };
+    const chatOpts = {}; // 只在使用者要求「比模型預設更小」時才覆寫，避免與預先編譯的模型程式不相容
+    if(Number(p.num_ctx) > 0 && Number(p.num_ctx) < ctxMax) chatOpts.context_window_size = Number(p.num_ctx);
+    if(Number(p.prefill_chunk) > 0) chatOpts.prefill_chunk_size = Number(p.prefill_chunk);
+    state.engineOpts = chatOpts;
     state.engine = await w.CreateMLCEngine(modelId, { appConfig: webAppConfig(w), initProgressCallback: r => dl.update(r.progress || 0, r.text || '') }, chatOpts);
     state.engineModelId = modelId;
     state.ui.backend = 'webllm'; state.ui.model.webllm = modelId; saveUi();
@@ -1129,10 +1132,10 @@ async function* genWebllm(messages, p, signal){
   try{
     if(p.stream){
       const it = await state.engine.chat.completions.create(req);
-      for await (const ch of it){ const d = ch.choices && ch.choices[0] && ch.choices[0].delta && ch.choices[0].delta.content; if(d) yield {text:d}; if(ch.usage) yield {usage: ch.usage}; }
+      for await (const ch of it){ const c0 = ch.choices && ch.choices[0]; const d = c0 && c0.delta && c0.delta.content; if(d) yield {text:d}; if(c0 && c0.finish_reason) yield {finish: c0.finish_reason}; if(ch.usage) yield {usage: ch.usage}; }
     }else{
       const r = await state.engine.chat.completions.create(req);
-      yield {text: (r.choices[0].message.content||'')}; if(r.usage) yield {usage: r.usage};
+      yield {text: (r.choices[0].message.content||'')}; yield {finish: r.choices[0].finish_reason}; if(r.usage) yield {usage: r.usage};
     }
   }finally{ signal.removeEventListener('abort', onAbort); }
 }
@@ -1161,7 +1164,7 @@ async function* genOllama(messages, p, signal, model){
     const m = j.message || {};
     if(m.thinking){ if(!thinking){ thinking = true; yield {text:'<think>'}; } yield {text:m.thinking}; }
     if(m.content){ if(thinking){ thinking = false; yield {text:'</think>\n'}; } yield {text:m.content}; }
-    if(j.done){ if(thinking) yield {text:'</think>\n'}; yield {usage:{completion_tokens:j.eval_count, prompt_tokens:j.prompt_eval_count, eval_ms:(j.eval_duration||0)/1e6}}; }
+    if(j.done){ if(thinking) yield {text:'</think>\n'}; if(j.done_reason) yield {finish: j.done_reason}; yield {usage:{completion_tokens:j.eval_count, prompt_tokens:j.prompt_eval_count, eval_ms:(j.eval_duration||0)/1e6}}; }
   }
 }
 async function* genOai(messages, p, signal, model){
@@ -1182,6 +1185,7 @@ async function* genOai(messages, p, signal, model){
     const rc = delta.reasoning_content || delta.reasoning;
     if(rc){ if(!thinking){ thinking = true; yield {text:'<think>'}; } yield {text: rc}; }
     if(delta.content){ if(thinking){ thinking=false; yield {text:'</think>\n'}; } yield {text: delta.content}; }
+    if(j.choices && j.choices[0] && j.choices[0].finish_reason) yield {finish: j.choices[0].finish_reason};
     if(j.usage) yield {usage:j.usage};
   }
   if(thinking) yield {text:'</think>\n'};
@@ -1195,18 +1199,19 @@ async function runGeneration(messages, onText){
   const p = activeParams(); const be = state.ui.backend; const model = state.ui.model[be];
   const ctl = new AbortController(); state.abort = ctl;
   const gen = be==='webllm' ? genWebllm(messages, p, ctl.signal) : be==='ollama' ? genOllama(messages, p, ctl.signal, model) : be==='openai' ? genOai(messages, p, ctl.signal, model) : genDemo(messages);
-  const t0 = performance.now(); let out = '', chunks = 0, usage = null, tFirst = null;
+  const t0 = performance.now(); let out = '', chunks = 0, usage = null, tFirst = null, finish = '';
   try{
     for await (const ev of gen){
       if(ctl.signal.aborted) break;
       if(ev.text){ if(tFirst===null) tFirst = performance.now(); out += ev.text; chunks++; onText(out, chunks, t0); }
       if(ev.usage) usage = ev.usage;
+      if(ev.finish) finish = ev.finish;
     }
   }catch(e){ if(e.name !== 'AbortError') throw e; }
   const sec = Math.max(0.05, (performance.now() - (tFirst||t0)) / 1000);
   const tok = usage && usage.completion_tokens ? usage.completion_tokens : chunks;
   const tps = usage && usage.eval_ms ? tok / (usage.eval_ms/1000) : tok / sec;
-  return { text: out, tps, tokens: tok, aborted: ctl.signal.aborted, firstMs: tFirst ? Math.round(tFirst - t0) : null };
+  return { text: out, tps, tokens: tok, aborted: ctl.signal.aborted, firstMs: tFirst ? Math.round(tFirst - t0) : null, finish, promptTokens: usage && usage.prompt_tokens };
 }
 
 /* ======================================================================
@@ -1627,7 +1632,9 @@ async function sendMessage(text, opts){
       ai.content = out; const now = performance.now();
       if(now - lastPaint > 50){ lastPaint = now; const bub = $('msgs').lastElementChild && $('msgs').lastElementChild.querySelector('.bubble'); if(bub) bub.innerHTML = renderAnswer(out); $('tpsHud').textContent = (n / Math.max(0.1,(now - t0)/1000)).toFixed(1) + ' tok/s'; scrollBottom(); }
     });
-    ai.content = res.text || (res.aborted ? '（已停止）' : '（沒有產生內容）');
+    if(!res.text && !res.aborted){
+      ai.error = true; ai.content = emptyReplyHelp(res);
+    }else ai.content = res.text || '（已停止）';
     ai.meta = `${state.ui.backend==='demo'?'示範':(state.ui.model[state.ui.backend]||state.engineModelId||'')} · ${res.tps.toFixed(1)} tok/s${res.firstMs!=null?' · 首字 '+(res.firstMs/1000).toFixed(1)+' 秒':''}${res.aborted?' · 已停止':''}`;
     $('tpsHud').textContent = res.tps.toFixed(1) + ' tok/s';
     if(state.ui.tts && !res.aborted) speak(stripThink(ai.content));
@@ -1637,6 +1644,17 @@ async function sendMessage(text, opts){
     state.generating = false; state.abort = null; $('btnSend').classList.remove('hidden'); $('btnStop').classList.add('hidden');
     saveChats(); renderMsgs(); scrollBottom();
   }
+}
+function emptyReplyHelp(res){
+  const be = state.ui.backend; const id = state.engineModelId || '';
+  let t = `⚠️ 模型沒有產生任何文字（結束原因：${res.finish || '未知'}，輸入 ${res.promptTokens ?? '?'} tokens，輸出 ${res.tokens || 0} tokens）。\n\n可以依序試試：\n`;
+  if(be==='webllm'){
+    const ov = state.engineOpts && Object.keys(state.engineOpts).length;
+    t += (ov ? `1. 到「參數」把「預填區塊大小」改成 0、「上下文長度」改大或改回推薦值，再重新載入模型（目前有覆寫：${JSON.stringify(state.engineOpts)}）；改完請重新整理頁面再載入\n` : '1. 按「＋ 新對話」再問一次（排除舊對話內容的影響）\n');
+    if(/q4f16_1/.test(id)) t += `2. 改用 f32 版本：部分 Android 顯示晶片的半精度（f16）運算有問題，會造成沒有輸出。到「下載」頁按「列出全部可用模型」，選 \`${id.replace('q4f16_1','q4f32_1')}\`\n`;
+    t += '3. 換一個較小的模型（例如 Qwen3.5 2B），手機記憶體不足時也可能出現這個狀況\n4. 「參數」把「思考模式」改成「依模型預設」';
+  }else t += '1. 按「＋ 新對話」再問一次\n2. 確認伺服器端的模型能正常回覆（例如在終端機用 ollama run 測試）\n3. 檢查「停止詞」是否設得太短';
+  return t;
 }
 function scrollBottom(force){ const nearBottom = (window.innerHeight + window.scrollY) >= document.body.scrollHeight - 220; if(force || nearBottom) window.scrollTo({top: document.body.scrollHeight}); }
 function autoGrow(){ const t = $('chatInput'); t.style.height = 'auto'; t.style.height = Math.min(200, t.scrollHeight) + 'px'; }
