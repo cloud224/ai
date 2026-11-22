@@ -1,0 +1,24 @@
+{
+  "name": "萬用離線 AI 工作台",
+  "short_name": "離線AI",
+  "description": "手機、平板、電腦通用的離線 AI 工作台：偵測硬體推薦模型、下載模型、多組參數設定檔。",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "background_color": "#f6f7f9",
+  "theme_color": "#2563eb",
+  "lang": "zh-Hant-TW",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "shortcuts": [
+    {"name": "新對話", "url": "./#chat", "icons": [{"src": "icons/icon-192.png", "sizes": "192x192"}]},
+    {"name": "下載模型", "url": "./#models", "icons": [{"src": "icons/icon-192.png", "sizes": "192x192"}]}
+  ]
+}

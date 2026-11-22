@@ -1,0 +1,1901 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f7f9">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="離線AI工作台">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>萬用離線 AI 工作台</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Cpath d='M18 40V24l14-8 14 8v16l-14 8z' fill='none' stroke='white' stroke-width='4' stroke-linejoin='round'/%3E%3Ccircle cx='32' cy='32' r='5' fill='white'/%3E%3C/svg%3E">
+<style>
+/* ===== 色彩與排版變數（不依賴任何 CDN，斷網也能正常顯示） ===== */
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --elev:#eef1f5; --hover:#e3e8ef;
+  --text:#111827; --sub:#4b5563; --muted:#6b7280; --border:#dde3ea;
+  --accent:#2563eb; --accent-2:#1d4ed8; --accent-soft:rgba(37,99,235,.10); --on-accent:#fff;
+  --ok:#15803d; --ok-soft:rgba(21,128,61,.10); --warn:#b45309; --warn-soft:rgba(180,83,9,.12);
+  --bad:#dc2626; --bad-soft:rgba(220,38,38,.10);
+  --user:#2563eb; --user-text:#fff; --bot:#ffffff;
+  --code-bg:#0f172a; --code-text:#e5e7eb;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 4px 16px rgba(16,24,40,.05);
+  --radius:14px; --fs:15px;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1117; --surface:#151b23; --elev:#1c2430; --hover:#253041;
+    --text:#e6edf3; --sub:#c0c8d2; --muted:#8b96a3; --border:#2a3441;
+    --accent:#4c8dff; --accent-2:#6aa1ff; --accent-soft:rgba(76,141,255,.16); --on-accent:#08111f;
+    --ok:#3fb950; --ok-soft:rgba(63,185,80,.14); --warn:#d29922; --warn-soft:rgba(210,153,34,.16);
+    --bad:#f85149; --bad-soft:rgba(248,81,73,.14);
+    --user:#2f6fe0; --user-text:#fff; --bot:#151b23; --code-bg:#0a0e14;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1117; --surface:#151b23; --elev:#1c2430; --hover:#253041;
+  --text:#e6edf3; --sub:#c0c8d2; --muted:#8b96a3; --border:#2a3441;
+  --accent:#4c8dff; --accent-2:#6aa1ff; --accent-soft:rgba(76,141,255,.16); --on-accent:#08111f;
+  --ok:#3fb950; --ok-soft:rgba(63,185,80,.14); --warn:#d29922; --warn-soft:rgba(210,153,34,.16);
+  --bad:#f85149; --bad-soft:rgba(248,81,73,.14);
+  --user:#2f6fe0; --user-text:#fff; --bot:#151b23; --code-bg:#0a0e14;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
+}
+:root[data-accent="green"]{--accent:#0f9f6e;--accent-2:#0b7f58;--accent-soft:rgba(15,159,110,.12);--user:#0f9f6e}
+:root[data-accent="violet"]{--accent:#7c3aed;--accent-2:#6d28d9;--accent-soft:rgba(124,58,237,.12);--user:#7c3aed}
+:root[data-accent="orange"]{--accent:#ea580c;--accent-2:#c2410c;--accent-soft:rgba(234,88,12,.12);--user:#ea580c}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:var(--fs);line-height:1.55;-webkit-text-size-adjust:100%;overflow-x:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+code,pre,.mono{font-family:var(--mono)}
+.hidden{display:none!important}
+
+/* ===== 版面：桌機左側欄、手機底部分頁列 ===== */
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100vh;min-height:100dvh}
+.side{position:sticky;top:0;height:100vh;height:100dvh;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;padding:14px 10px;gap:4px}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 14px}
+.brand-logo{width:34px;height:34px;border-radius:10px;background:var(--accent);display:grid;place-items:center;color:#fff;flex:none}
+.brand b{display:block;font-size:15px;line-height:1.2}
+.brand small{color:var(--muted);font-size:11.5px}
+.nav-btn{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;padding:10px 12px;border-radius:10px;cursor:pointer;text-align:left;color:var(--sub);font-weight:600;font-size:14px}
+.nav-btn:hover{background:var(--elev)}
+.nav-btn[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+.nav-btn svg{width:19px;height:19px;flex:none}
+.side-foot{margin-top:auto;padding:10px 8px;font-size:12px;color:var(--muted)}
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;min-height:56px}
+.topbar h1{font-size:17px;margin:0;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .grow{flex:1;min-width:0}
+.status-pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:5px 10px;border-radius:999px;background:var(--elev);color:var(--sub);max-width:46vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:0;cursor:pointer}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.bad{background:var(--bad)}
+.content{padding:20px;max-width:1180px;width:100%;margin:0 auto;flex:1}
+.tabbar{display:none}
+
+@media (max-width: 900px){
+  .app{grid-template-columns:1fr}
+  .side{display:none}
+  .topbar{padding:8px 16px;padding-top:max(8px,env(safe-area-inset-top))}
+  .content{padding:14px 16px calc(84px + env(safe-area-inset-bottom))}
+  .tabbar{display:grid;grid-template-columns:repeat(6,1fr);position:fixed;bottom:0;left:0;right:0;z-index:30;background:var(--surface);border-top:1px solid var(--border);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
+  .tabbar button{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--muted);padding:6px 0;border-radius:10px;cursor:pointer;min-height:48px}
+  .tabbar button svg{width:21px;height:21px}
+  .tabbar button[aria-current="page"]{color:var(--accent)}
+}
+
+/* ===== 元件 ===== */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.card+.card,.stack>*+*{margin-top:14px}
+.card h2{font-size:16px;margin:0 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card h3{font-size:14.5px;margin:14px 0 8px}
+.desc{color:var(--muted);font-size:13px;margin:0 0 12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width: 900px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:1fr 1fr}}
+@media (max-width: 560px){.g2,.g3{grid-template-columns:1fr}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--border);background:var(--surface);padding:8px 13px;border-radius:10px;cursor:pointer;font-weight:600;font-size:13.5px;min-height:38px;white-space:nowrap;text-decoration:none;color:var(--text)}
+.btn:hover{background:var(--elev)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primary:hover{background:var(--accent-2)}
+.btn.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--border))}
+.btn.sm{padding:5px 10px;min-height:32px;font-size:12.5px;border-radius:8px}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn svg{width:16px;height:16px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:650;padding:3px 8px;border-radius:999px;background:var(--elev);color:var(--sub);white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.warn{background:var(--warn-soft);color:var(--warn)} .chip.bad{background:var(--bad-soft);color:var(--bad)} .chip.acc{background:var(--accent-soft);color:var(--accent)}
+.seg{display:inline-flex;background:var(--elev);padding:3px;border-radius:11px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:6px 11px;border-radius:8px;font-size:13px;font-weight:650;color:var(--sub);cursor:pointer;min-height:32px}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+label.field{display:block;font-size:12.5px;font-weight:650;color:var(--sub)}
+label.field>span.lbl{display:flex;justify-content:space-between;gap:6px;margin-bottom:5px}
+.input,select.input,textarea.input{width:100%;border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:8px 11px;min-height:38px;font-size:14px;outline:none}
+textarea.input{resize:vertical;line-height:1.5}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--accent);width:17px;height:17px}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--border);font-size:13.5px}
+.switch:last-child{border-bottom:0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:600;word-break:break-all}
+.stat{background:var(--elev);border-radius:12px;padding:12px}
+.stat .k{font-size:12px;color:var(--muted);font-weight:600}
+.stat .v{font-size:18px;font-weight:750;margin-top:2px;word-break:break-word}
+.stat .s{font-size:12px;color:var(--sub);margin-top:3px}
+.note{border-radius:12px;padding:10px 12px;font-size:13px;background:var(--accent-soft);color:var(--text)}
+.note.warn{background:var(--warn-soft)} .note.bad{background:var(--bad-soft)} .note.ok{background:var(--ok-soft)}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
+table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:560px}
+table.t th,table.t td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+table.t th{background:var(--elev);font-size:12px;color:var(--sub)}
+table.t tr:last-child td{border-bottom:0}
+.list-item{border:1px solid var(--border);border-radius:12px;padding:11px 12px;background:var(--surface)}
+.list-item+.list-item{margin-top:8px}
+.li-title{font-weight:700;font-size:14px;word-break:break-all}
+.li-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.progress{height:8px;background:var(--elev);border-radius:99px;overflow:hidden}
+.progress>i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.path{font-family:var(--mono);font-size:12.5px;background:var(--elev);padding:6px 9px;border-radius:8px;word-break:break-all;flex:1;min-width:0}
+details.fold{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface)}
+details.fold+details.fold{margin-top:8px}
+details.fold summary{cursor:pointer;font-weight:700;font-size:14px}
+.empty{color:var(--muted);font-size:13px;text-align:center;padding:18px}
+.model-card{display:flex;flex-direction:column;gap:8px}
+.model-card .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.mini{font-size:12px;color:var(--muted)}
+.sep{height:1px;background:var(--border);margin:12px 0}
+
+/* ===== 對話 ===== */
+.chat-wrap{display:flex;flex-direction:column;gap:10px;min-height:calc(100dvh - 140px)}
+.chat-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+@media (max-width:600px){.chat-tools{gap:6px}.chat-tools select.input{flex:1 1 calc(50% - 6px);min-width:0!important;width:auto;font-size:13px;min-height:36px;padding:6px 8px}.chat-tools .grow{display:none}.chat-tools .btn{flex:1}}
+.msgs{flex:1;display:flex;flex-direction:column;gap:12px;padding:4px 0}
+.msg{display:flex;flex-direction:column;max-width:min(780px,92%)}
+.msg.user{align-self:flex-end;align-items:flex-end}
+.bubble{padding:10px 14px;border-radius:16px;word-wrap:break-word;overflow-wrap:anywhere}
+.msg.user .bubble{background:var(--user);color:var(--user-text);border-bottom-right-radius:5px;white-space:pre-wrap}
+.msg.bot .bubble{background:var(--bot);border:1px solid var(--border);border-bottom-left-radius:5px}
+.msg .meta{font-size:11px;color:var(--muted);margin:3px 6px;display:flex;gap:4px 8px;align-items:center;flex-wrap:wrap}
+.msg .meta button{white-space:nowrap;border:0;background:none;color:var(--muted);cursor:pointer;font-size:11px;padding:2px}
+.msg .meta button:hover{color:var(--accent)}
+.bubble p{margin:.35em 0} .bubble ul,.bubble ol{margin:.3em 0;padding-left:1.3em}
+.bubble h1,.bubble h2,.bubble h3,.bubble h4{font-size:1.02em;margin:.6em 0 .3em}
+.bubble pre{background:var(--code-bg);color:var(--code-text);padding:10px 12px;border-radius:10px;overflow-x:auto;font-size:12.5px;position:relative}
+.bubble :not(pre)>code{background:var(--elev);padding:1px 5px;border-radius:5px;font-size:.9em}
+.bubble table{border-collapse:collapse;font-size:13px;display:block;overflow-x:auto}
+.bubble td,.bubble th{border:1px solid var(--border);padding:4px 8px}
+.bubble blockquote{margin:.4em 0;padding-left:10px;border-left:3px solid var(--border);color:var(--sub)}
+.think{border:1px dashed var(--border);border-radius:10px;padding:6px 10px;margin:4px 0 8px;font-size:12.5px;color:var(--sub);background:var(--elev)}
+.think summary{cursor:pointer;font-weight:650}
+.composer{position:sticky;bottom:0;background:linear-gradient(to top,var(--bg) 75%,transparent);padding-top:10px}
+@media (max-width:900px){.composer{bottom:calc(62px + env(safe-area-inset-bottom))}}
+.composer-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:8px;box-shadow:var(--shadow)}
+.composer textarea{border:0;outline:none;width:100%;resize:none;background:transparent;padding:6px 8px;max-height:200px;min-height:44px;font-size:15px}
+.icon-btn{width:38px;height:38px;border-radius:10px;border:0;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--sub);flex:none}
+.icon-btn:hover{background:var(--elev)}
+.icon-btn.on{color:var(--bad)}
+.icon-btn svg{width:20px;height:20px}
+.send-btn{width:40px;height:40px;border-radius:12px;background:var(--accent);color:var(--on-accent);border:0;display:grid;place-items:center;cursor:pointer;flex:none}
+.send-btn svg{width:19px;height:19px}
+.hist-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;cursor:pointer}
+.hist-item:hover{background:var(--elev)}
+.hist-item.active{background:var(--accent-soft)}
+
+/* ===== 對話框與提示 ===== */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;display:grid;place-items:center;padding:16px}
+.modal{background:var(--surface);border-radius:16px;max-width:520px;width:100%;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:86vh;overflow:auto}
+.modal h3{margin:0 0 8px;font-size:16px}
+.modal p{white-space:pre-wrap;color:var(--sub);font-size:14px;margin:0 0 14px}
+#toasts{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:6px;width:min(420px,calc(100% - 32px));pointer-events:none}
+.toast{background:var(--text);color:var(--bg);padding:10px 14px;border-radius:12px;font-size:13.5px;box-shadow:0 8px 30px rgba(0,0,0,.25);animation:tin .2s ease}
+.toast.ok{background:var(--ok);color:#fff} .toast.bad{background:var(--bad);color:#fff} .toast.warn{background:var(--warn);color:#fff}
+@keyframes tin{from{opacity:0;transform:translateY(-6px)}to{opacity:1}}
+.dl-dock{position:fixed;right:16px;bottom:16px;z-index:40;width:min(360px,calc(100% - 32px));display:flex;flex-direction:column;gap:8px}
+@media (max-width:900px){.dl-dock{bottom:calc(76px + env(safe-area-inset-bottom))}}
+.dl-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;box-shadow:var(--shadow);font-size:12.5px}
+.param-row{padding:10px 0;border-bottom:1px dashed var(--border)}
+.param-row:last-child{border-bottom:0}
+.param-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.param-head b{font-size:13.5px}
+.param-help{font-size:12px;color:var(--muted);margin:3px 0 6px}
+.param-ctrl{display:grid;grid-template-columns:1fr 92px;gap:10px;align-items:center}
+.param-ctrl.full{grid-template-columns:1fr}
+.badge-be{font-size:10.5px;padding:1px 6px;border-radius:6px;background:var(--elev);color:var(--muted);font-weight:650}
+.badge-be.on{background:var(--accent-soft);color:var(--accent)}
+.changed{color:var(--warn);font-size:11px;font-weight:700}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div id="toasts" aria-live="polite"></div>
+<div class="app">
+  <aside class="side" aria-label="主選單">
+    <div class="brand">
+      <div class="brand-logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M5 15V9l7-4 7 4v6l-7 4z"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></div>
+      <div><b>萬用離線 AI 工作台</b><small>手機・平板・電腦通用</small></div>
+    </div>
+    <nav id="sideNav"></nav>
+    <div class="side-foot" id="sideFoot">v1.0 · 單一 HTML</div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <div class="grow"><h1 id="pageTitle">對話</h1></div>
+      <button class="btn sm primary hidden" id="btnInstall" title="安裝成 App">安裝 App</button>
+      <button class="status-pill" id="netPill" title="網路狀態"><span class="dot" id="netDot"></span><span id="netText">偵測中</span></button>
+      <button class="status-pill" id="enginePill" title="目前使用的 AI"><span class="dot" id="engDot"></span><span id="engText">尚未選擇 AI</span></button>
+    </header>
+    <main class="content">
+
+<!-- ================= 對話 ================= -->
+<section id="tab-chat" class="tab">
+  <div class="chat-wrap">
+    <div class="chat-tools">
+      <select class="input" id="backendSel" style="width:auto;min-width:150px" aria-label="AI 引擎">
+        <option value="webllm">瀏覽器內建（WebGPU）</option>
+        <option value="ollama">Ollama（本機）</option>
+        <option value="openai">llama.cpp / LM Studio / 相容 API</option>
+        <option value="demo">示範模式（不需模型）</option>
+      </select>
+      <select class="input" id="chatModelSel" style="width:auto;min-width:170px;max-width:100%" aria-label="模型"></select>
+      <select class="input" id="profileQuickSel" style="width:auto;min-width:130px" aria-label="參數設定檔"></select>
+      <select class="input" id="personaSel" style="width:auto" aria-label="角色">
+        <option value="assistant">一般助理</option><option value="translator">翻譯</option><option value="coder">程式</option><option value="writer">寫作潤飾</option><option value="notes">筆記整理</option><option value="thinker">邏輯推理</option>
+      </select>
+      <span class="grow" style="flex:1"></span>
+      <button class="btn sm" id="btnHistory">歷史對話</button>
+      <button class="btn sm" id="btnNewChat">＋ 新對話</button>
+      <button class="btn sm" id="btnExportChat">匯出</button>
+    </div>
+    <div id="historyPanel" class="card hidden">
+      <div class="row between"><b>歷史對話</b><button class="btn sm danger" id="btnClearAllChats">全部刪除</button></div>
+      <div id="historyList" style="margin-top:8px;max-height:300px;overflow:auto"></div>
+    </div>
+    <div id="chatHint" class="note hidden"></div>
+    <div class="msgs" id="msgs"></div>
+    <div class="composer">
+      <div id="attachBar" class="row hidden" style="margin-bottom:6px"><span class="chip acc" id="attachName"></span><button class="btn sm ghost" id="btnAttachClear">移除附件</button></div>
+      <div class="composer-box">
+        <textarea id="chatInput" rows="1" placeholder="輸入訊息，Enter 送出、Shift+Enter 換行"></textarea>
+        <div class="row between">
+          <div class="row" style="gap:2px">
+            <button class="icon-btn" id="btnAttach" title="附加文字檔"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.5l-8.5 8.5a5 5 0 01-7-7L14 5.5a3.3 3.3 0 014.7 4.7L10.2 18.7a1.7 1.7 0 01-2.4-2.4L15.5 8.6"/></svg></button>
+            <button class="icon-btn" id="btnMic" title="語音輸入"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></button>
+            <input type="file" id="attachInput" class="hidden" accept=".txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.log,.yaml,.yml,.ini,.sql,text/*">
+            <span class="mini" id="tpsHud" style="margin-left:6px"></span>
+          </div>
+          <div class="row" style="gap:6px">
+            <button class="btn sm danger hidden" id="btnStop">■ 停止</button>
+            <button class="send-btn" id="btnSend" title="送出"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 硬體與推薦 ================= -->
+<section id="tab-hw" class="tab hidden">
+  <div class="card">
+    <div class="row between"><h2>硬體偵測</h2><div class="row"><button class="btn sm" id="btnRescan">重新偵測</button><button class="btn sm" id="btnCopyHw">複製報告</button></div></div>
+    <p class="desc">瀏覽器能看到的硬體資訊有限（例如記憶體常被限制最高回報 8 GB、Safari 不提供記憶體數值），請在下方「手動校正」填入實際規格，推薦會更準。</p>
+    <div class="grid g4" id="hwStats"></div>
+    <details class="fold" style="margin-top:12px"><summary>詳細偵測資料</summary><dl class="kv" id="hwDetail" style="margin-top:10px"></dl></details>
+  </div>
+  <div class="card">
+    <h2>手動校正規格</h2>
+    <p class="desc">留空代表使用自動偵測值。獨立顯示卡請填顯示卡記憶體（VRAM）。</p>
+    <div class="grid g4">
+      <label class="field"><span class="lbl">裝置類型</span><select class="input" id="ovType"><option value="">自動</option><option value="phone">手機</option><option value="tablet">平板</option><option value="laptop">筆電</option><option value="desktop">桌機</option></select></label>
+      <label class="field"><span class="lbl">系統記憶體 RAM (GB)</span><input class="input" type="number" id="ovRam" min="1" max="1024" step="1" placeholder="自動"></label>
+      <label class="field"><span class="lbl">顯示卡記憶體 VRAM (GB)</span><input class="input" type="number" id="ovVram" min="0" max="512" step="1" placeholder="無或共用"></label>
+      <label class="field"><span class="lbl">CPU 實體核心數</span><input class="input" type="number" id="ovCores" min="1" max="256" step="1" placeholder="自動"></label>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="btn primary sm" id="btnApplyOv">套用並重新推薦</button><button class="btn sm" id="btnClearOv">清除校正</button></div>
+  </div>
+  <div class="card">
+    <div class="row between"><h2>推薦 AI 模型 <span class="chip acc" id="tierChip"></span></h2></div>
+    <p class="desc" id="recoSummary"></p>
+    <h3>① 直接在瀏覽器執行（WebGPU，免安裝）</h3>
+    <div class="grid g3" id="recoWeb"></div>
+    <h3>② 搭配本機程式執行（Ollama / llama.cpp / LM Studio，效能較好）</h3>
+    <div class="grid g3" id="recoNative"></div>
+    <p class="mini" style="margin-top:10px">模型清單資料查核：<span id="dataChecked"></span>。下載大小與速度為估計值，實際依量化格式與裝置而定。</p>
+  </div>
+</section>
+
+<!-- ================= 模型下載 ================= -->
+<section id="tab-models" class="tab hidden">
+  <div class="card">
+    <h2>線上搜尋 AI 模型（Hugging Face）</h2>
+    <p class="desc">搜尋公開模型，列出檔案大小後可「下載到裝置資料夾」、「交給 Ollama 下載」或「在瀏覽器載入」。搜尋需要網路。</p>
+    <div class="row">
+      <input class="input" id="hfQuery" placeholder="例如：Qwen3.5、gemma-4、Breeze、llama 中文" style="flex:1;min-width:200px">
+      <select class="input" id="hfFormat" style="width:auto"><option value="gguf">GGUF（通用）</option><option value="mlc">MLC（瀏覽器 WebGPU）</option><option value="all">全部</option></select>
+      <select class="input" id="hfSort" style="width:auto"><option value="downloads">下載數</option><option value="trendingScore">熱門趨勢</option><option value="likes">讚數</option><option value="lastModified">最近更新</option></select>
+      <button class="btn primary" id="btnHfSearch">搜尋</button>
+    </div>
+    <div class="row" style="margin-top:8px" id="hotChips"></div>
+    <div id="hfResults" style="margin-top:12px"></div>
+  </div>
+  <div class="card">
+    <div class="row between"><h2>瀏覽器內建模型（WebGPU）</h2><div class="row"><button class="btn sm" id="btnWebllmAll">列出全部可用模型</button><button class="btn sm" id="btnRefreshCache">檢查已下載</button></div></div>
+    <p class="desc">模型會存在此瀏覽器的網站儲存空間，斷網後仍可使用。清除瀏覽器資料會一併刪除，建議到「儲存與備份」匯出備份。</p>
+    <div id="webllmEngineBox" class="note" style="margin-bottom:10px"></div>
+    <div class="grid g3" id="webllmList"></div>
+  </div>
+  <div class="card">
+    <div class="row between"><h2>Ollama 本機模型</h2><div class="row"><button class="btn sm" id="btnOllamaRefresh">重新整理</button></div></div>
+    <p class="desc">需在電腦（或 Android 的 Termux）安裝並啟動 Ollama。網址可在「參數設定 › 連線」修改。</p>
+    <div id="ollamaStatus" class="note"></div>
+    <div class="row" style="margin-top:10px">
+      <input class="input" id="ollamaPullName" placeholder="模型名稱，例如 qwen3.5:4b 或 hf.co/unsloth/Qwen3.5-4B-GGUF:Q4_K_M" style="flex:1;min-width:220px">
+      <button class="btn primary" id="btnOllamaPull">下載到 Ollama</button>
+    </div>
+    <div id="ollamaList" style="margin-top:12px"></div>
+  </div>
+  <div class="card">
+    <div class="row between"><h2>相容 API 伺服器（llama.cpp / LM Studio / Jan 等）</h2><button class="btn sm" id="btnOaiRefresh">讀取模型清單</button></div>
+    <div id="oaiStatus" class="note"></div>
+    <div id="oaiList" style="margin-top:10px"></div>
+  </div>
+</section>
+
+<!-- ================= 參數設定 ================= -->
+<section id="tab-params" class="tab hidden">
+  <div class="card">
+    <h2>參數設定檔</h2>
+    <p class="desc">「推薦」設定檔會依硬體自動計算。可另存多組設定檔（例如：手機省電、電腦長文、寫程式），並指定其中一組為預設值。</p>
+    <div class="row">
+      <select class="input" id="profileSel" style="flex:1;min-width:180px"></select>
+      <span class="chip ok" id="profileDefaultChip">預設</span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn sm primary" id="btnSetDefault">設為預設值</button>
+      <button class="btn sm" id="btnRestoreReco">還原為推薦值</button>
+      <button class="btn sm" id="btnNewProfile">另存新設定檔</button>
+      <button class="btn sm" id="btnRenameProfile">重新命名</button>
+      <button class="btn sm danger" id="btnDeleteProfile">刪除</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn sm" id="btnExportProfile">匯出此設定檔</button>
+      <button class="btn sm" id="btnExportAllProfiles">匯出全部設定檔</button>
+      <button class="btn sm" id="btnImportProfiles">匯入設定檔</button>
+      <input type="file" id="importProfilesInput" class="hidden" accept=".json,application/json">
+    </div>
+    <div class="sep"></div>
+    <div class="row"><span class="mini">情境快速套用（只改取樣參數）：</span>
+      <div class="seg" id="presetSeg"><button data-p="precise">精準</button><button data-p="balanced">平衡</button><button data-p="creative">創意</button><button data-p="coding">程式</button></div>
+    </div>
+    <div class="row" style="margin-top:10px"><span class="mini">顯示適用引擎：</span>
+      <div class="seg" id="beFilterSeg"><button data-b="all" aria-pressed="true">全部</button><button data-b="webllm">瀏覽器</button><button data-b="ollama">Ollama</button><button data-b="openai">llama.cpp/相容</button></div>
+    </div>
+  </div>
+  <div id="paramGroups"></div>
+  <div class="card">
+    <h2>連線設定</h2>
+    <div class="grid g2">
+      <label class="field"><span class="lbl">Ollama 網址</span><input class="input" id="cfgOllamaUrl" placeholder="http://127.0.0.1:11434"></label>
+      <label class="field"><span class="lbl">相容 API 網址（含 /v1）</span><input class="input" id="cfgOaiUrl" placeholder="http://127.0.0.1:8080/v1"></label>
+      <label class="field"><span class="lbl">相容 API 金鑰（選填，只存在本機）</span><input class="input" id="cfgOaiKey" type="password" autocomplete="off" placeholder="本機伺服器通常不需要"></label>
+      <label class="field"><span class="lbl">瀏覽器模型儲存方式</span><select class="input" id="cfgCacheBackend"><option value="cache">Cache API（最穩定，預設）</option><option value="indexeddb">IndexedDB</option><option value="opfs">OPFS 私有檔案系統</option></select></label>
+    </div>
+    <div class="row" style="margin-top:8px"><span class="mini">快速填入：</span>
+      <button class="btn sm" data-oai="http://127.0.0.1:8080/v1">llama.cpp :8080</button>
+      <button class="btn sm" data-oai="http://127.0.0.1:1234/v1">LM Studio :1234</button>
+      <button class="btn sm" data-oai="http://127.0.0.1:1337/v1">Jan :1337</button>
+      <button class="btn sm" data-oai="http://127.0.0.1:11434/v1">Ollama 相容 :11434</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>外觀與介面</h2>
+    <div class="grid g3">
+      <label class="field"><span class="lbl">主題</span><select class="input" id="cfgTheme"><option value="auto">跟隨系統</option><option value="light">亮色</option><option value="dark">暗色</option></select></label>
+      <label class="field"><span class="lbl">主色</span><select class="input" id="cfgAccent"><option value="blue">藍</option><option value="green">綠</option><option value="violet">紫</option><option value="orange">橘</option></select></label>
+      <label class="field"><span class="lbl">字體大小 <span id="fsVal"></span></span><input type="range" id="cfgFont" min="13" max="20" step="1"></label>
+    </div>
+    <div style="margin-top:8px">
+      <div class="switch"><span>回覆一律使用繁體中文（台灣用語）</span><input type="checkbox" id="cfgZhTw"></div>
+      <div class="switch"><span>回覆完成後自動朗讀</span><input type="checkbox" id="cfgTts"></div>
+      <div class="switch"><span>Enter 直接送出（關閉則需 Ctrl/⌘+Enter）</span><input type="checkbox" id="cfgEnterSend"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 儲存與備份 ================= -->
+<section id="tab-storage" class="tab hidden">
+  <div class="card">
+    <h2>AI 模型存放位置</h2>
+    <p class="desc">網頁基於安全限制，無法直接叫出檔案總管。這裡提供三種做法：① 複製路徑貼到檔案總管；② 下載「開啟資料夾小幫手」腳本雙擊執行；③ 用瀏覽器的資料夾權限（Chrome / Edge）直接在本頁瀏覽、備份。</p>
+    <div class="row" style="margin-bottom:10px"><span class="mini">目前系統：</span><div class="seg" id="osSeg"><button data-os="windows">Windows</button><button data-os="mac">macOS</button><button data-os="linux">Linux</button><button data-os="android">Android</button><button data-os="ios">iPhone/iPad</button></div></div>
+    <div id="pathList"></div>
+  </div>
+  <div class="card">
+    <h2>我的下載資料夾（GGUF 模型）</h2>
+    <p class="desc" id="fsaDesc"></p>
+    <div class="row"><button class="btn primary sm" id="btnPickDlDir">選擇下載資料夾</button><button class="btn sm" id="btnListDlDir">列出檔案</button><button class="btn sm" id="btnBackupDir">備份到其他位置…</button><span class="mini" id="dlDirName"></span></div>
+    <div id="dlDirFiles" style="margin-top:10px"></div>
+  </div>
+  <div class="card">
+    <h2>瀏覽器模型備份與還原</h2>
+    <p class="desc">把瀏覽器內建模型（WebGPU）從網站儲存空間匯出成一般檔案，放到隨身碟、NAS 或另一台裝置後可再匯入，免重新下載。目前支援「Cache API」儲存方式。</p>
+    <div class="row"><button class="btn sm" id="btnPersist">申請永久儲存（避免被系統清除）</button><span class="mini" id="persistState"></span></div>
+    <div id="cacheModels" style="margin-top:10px"></div>
+    <div class="row" style="margin-top:10px"><button class="btn sm" id="btnImportCache">從資料夾匯入模型備份</button><button class="btn sm danger" id="btnClearCaches">清除全部瀏覽器模型</button></div>
+  </div>
+  <div class="card">
+    <h2>離線引擎</h2>
+    <p class="desc">瀏覽器模式需要 WebLLM 推理引擎（約 7 MB）。預先存到本機後，即使把此 HTML 檔存在裝置中斷網開啟，也能載入已下載的模型。</p>
+    <div class="row"><button class="btn sm primary" id="btnSaveEngine">下載引擎供離線使用</button><button class="btn sm danger" id="btnDelEngine">刪除離線引擎</button><span class="mini" id="engineState"></span></div>
+  </div>
+  <div class="card">
+    <h2>全部資料備份</h2>
+    <p class="desc">對話紀錄、設定檔、連線設定一次匯出或還原（不含模型檔）。</p>
+    <div class="row"><button class="btn sm" id="btnExportAll">匯出全部資料</button><button class="btn sm" id="btnImportAll">匯入全部資料</button><input type="file" id="importAllInput" class="hidden" accept=".json"><button class="btn sm danger" id="btnFactory">還原出廠設定</button></div>
+  </div>
+</section>
+
+<!-- ================= 工具與說明 ================= -->
+<section id="tab-help" class="tab hidden">
+  <div class="card">
+    <h2>快速工具</h2>
+    <p class="desc">翻譯、摘要、潤飾會使用目前選擇的 AI；個資遮罩完全在本機執行，不需要模型。</p>
+    <div class="grid g2">
+      <div>
+        <label class="field"><span class="lbl">輸入文字</span><textarea class="input" id="toolInput" rows="6" placeholder="貼上要處理的文字"></textarea></label>
+        <div class="row" style="margin-top:8px">
+          <select class="input" id="toolLang" style="width:auto"><option>英文</option><option>繁體中文</option><option>日文</option><option>韓文</option><option>越南文</option><option>泰文</option></select>
+          <button class="btn sm" data-tool="translate">翻譯</button>
+          <button class="btn sm" data-tool="summary">摘要＋待辦</button>
+          <button class="btn sm" data-tool="rewrite">商務潤飾</button>
+          <button class="btn sm primary" data-tool="mask">個資遮罩（本機）</button>
+        </div>
+      </div>
+      <div>
+        <label class="field"><span class="lbl">結果</span><textarea class="input" id="toolOutput" rows="6" readonly></textarea></label>
+        <div class="row" style="margin-top:8px"><button class="btn sm" id="btnToolCopy">複製結果</button><span class="mini" id="toolInfo"></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>各平台能做到什麼</h2>
+    <p class="desc">依 2026 年 11 月查到的資料整理；標「不確定」的項目請以實機測試為準。</p>
+    <div class="table-wrap"><table class="t" id="platformTable"></table></div>
+  </div>
+  <div class="card">
+    <h2>使用方式建議</h2>
+    <details class="fold" open><summary>手機、平板（最簡單）</summary><div class="desc" style="margin-top:8px">用 Chrome（Android）或 Safari（iOS 26 以上）以 <b>https 網址</b>開啟本工具 → 「硬體與推薦」選一個綠色標示的模型 → 下載完成後就能開飛航模式使用。iPhone 用 Safari「分享 › 加入主畫面」可像 App 一樣開啟。直接點開手機裡的 HTML 檔，部分瀏覽器會停用 WebGPU 或儲存功能（不確定，依瀏覽器而異）。</div></details>
+    <details class="fold"><summary>電腦（效能最好）</summary><div class="desc" style="margin-top:8px">安裝 <a href="https://ollama.com/download" target="_blank" rel="noopener">Ollama</a> → 在「模型下載」輸入模型名稱下載 → 對話頁引擎選 Ollama。若出現連線被拒（CORS），請設定環境變數 <code>OLLAMA_ORIGINS</code>（見下方）後重啟 Ollama。也可用 llama.cpp 的 <code>llama-server</code> 或 LM Studio 的本機伺服器。</div></details>
+    <details class="fold"><summary>Ollama 連線被拒（CORS）怎麼辦</summary><div class="desc" style="margin-top:8px">Ollama 預設只接受 127.0.0.1／0.0.0.0 來源的網頁。若本工具是用其他網址或直接開啟檔案，請設定：<br>
+      Windows（PowerShell）：<code>setx OLLAMA_ORIGINS "*"</code> 後從工作列結束 Ollama 再重開<br>
+      macOS：<code>launchctl setenv OLLAMA_ORIGINS "*"</code> 後重開 Ollama App<br>
+      Linux（systemd）：<code>sudo systemctl edit ollama</code> 加上 <code>Environment="OLLAMA_ORIGINS=*"</code><br>
+      「*」代表允許所有網頁連線，若電腦會連公共網路，建議改填本工具的實際網址來源。</div></details>
+    <details class="fold"><summary>隱私說明</summary><div class="desc" style="margin-top:8px">對話、設定都只存在此瀏覽器（localStorage / IndexedDB）。只有在你主動搜尋或下載時才會連到 Hugging Face、jsDelivr、GitHub（模型與引擎來源）。使用本機 AI 時，對話內容不會離開你的裝置或區域網路。</div></details>
+  </div>
+</section>
+
+    </main>
+  </div>
+</div>
+<nav class="tabbar" id="tabbar" aria-label="分頁"></nav>
+<div class="dl-dock" id="dlDock"></div>
+<div id="modalRoot"></div>
+<script>
+(function(){
+'use strict';
+/* ======================================================================
+   0. 常數與資料（資料查核：2026-11-22）
+   ====================================================================== */
+const APP_ID = 'offline_ai_workbench';
+const APP_VER = '1.0.0';
+const DATA_CHECKED_AT = '2026-11-22';
+const WEBLLM_VER = '0.2.87'; // 2026-10-30 發布；npm 上 0.2.89 為 11-17 發布，較新但尚未經長時間驗證
+const WEBLLM_URL = 'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@' + WEBLLM_VER + '/lib/index.js';
+const LS = APP_ID + ':';
+
+/* WebLLM 0.2.87 內建模型（vram 取自套件 prebuiltAppConfig，單位 MB） */
+const WEB_CATALOG = [
+  {id:'Qwen3.5-0.8B-q4f16_1-MLC', name:'Qwen3.5 0.8B', vendor:'Alibaba', vram:1629, vram32:1894, zh:3, tags:['zh','fast'], desc:'極輕量，入門手機也跑得動，適合簡短問答與翻譯。'},
+  {id:'gemma3-1b-it-q4f16_1-MLC', name:'Gemma 3 1B', vendor:'Google', vram:711, noF32:true, zh:2, tags:['fast'], desc:'體積最小之一，舊手機或低階平板的保底選擇。'},
+  {id:'Llama-3.2-1B-Instruct-q4f16_1-MLC', name:'Llama 3.2 1B', vendor:'Meta', vram:879, zh:1, tags:['fast'], desc:'英文為主的超輕量模型，速度快。'},
+  {id:'Qwen3.5-2B-q4f16_1-MLC', name:'Qwen3.5 2B', vendor:'Alibaba', vram:2245, vram32:2592, zh:4, tags:['zh','fast'], desc:'中文表現好、速度快，多數 6 GB 以上手機的首選。'},
+  {id:'Llama-3.2-3B-Instruct-q4f16_1-MLC', name:'Llama 3.2 3B', vendor:'Meta', vram:2264, zh:2, tags:['fast'], desc:'英文寫作與指令遵循穩定。'},
+  {id:'Qwen2.5-Coder-3B-Instruct-q4f16_1-MLC', name:'Qwen2.5 Coder 3B', vendor:'Alibaba', vram:2505, zh:3, tags:['code'], desc:'寫程式、SQL、正規表示式的輕量助手。'},
+  {id:'Ministral-3-3B-Instruct-2512-BF16-q4f16_1-MLC', name:'Ministral 3 3B', vendor:'Mistral', vram:2864, zh:2, tags:['fast'], desc:'Mistral 2025 年 12 月版小模型，歐語系表現佳。'},
+  {id:'gemma-4-E2B-it-q4f16_1-MLC', name:'Gemma 4 E2B', vendor:'Google', vram:3387, zh:3, tags:['zh'], desc:'Google 新一代手機級模型，不支援 f16 的裝置會自動改用較大的 f32 版本。'},
+  {id:'Qwen3-4B-q4f16_1-MLC', name:'Qwen3 4B', vendor:'Alibaba', vram:3432, vram32:4328, zh:4, tags:['zh','reason'], desc:'支援思考模式的 4B 模型，推理能力好。'},
+  {id:'Phi-4-mini-instruct-q4f16_1-MLC', name:'Phi-4 mini 3.8B', vendor:'Microsoft', vram:3438, zh:2, tags:['code','reason'], desc:'數學、邏輯與結構化輸出表現佳。'},
+  {id:'Qwen3.5-4B-q4f16_1-MLC', name:'Qwen3.5 4B', vendor:'Alibaba', vram:3868, vram32:4680, zh:5, tags:['zh','reason'], desc:'目前瀏覽器可跑的中文最佳平衡點，8 GB 裝置推薦。'},
+  {id:'Qwen2.5-Coder-7B-Instruct-q4f16_1-MLC', name:'Qwen2.5 Coder 7B', vendor:'Alibaba', vram:5107, zh:3, tags:['code'], desc:'較完整的程式能力，需要較大記憶體。'},
+  {id:'DeepSeek-R1-Distill-Qwen-7B-q4f16_1-MLC', name:'DeepSeek R1 Distill 7B', vendor:'DeepSeek', vram:5107, zh:3, tags:['reason'], desc:'長思考鏈推理，回覆較慢但較嚴謹。'},
+  {id:'Qwen3-8B-q4f16_1-MLC', name:'Qwen3 8B', vendor:'Alibaba', vram:5696, vram32:6853, zh:4, tags:['zh','reason'], desc:'桌機級品質，建議獨立顯卡或 16 GB 以上記憶體。'},
+  {id:'Qwen3.5-9B-q4f16_1-MLC', name:'Qwen3.5 9B', vendor:'Alibaba', vram:6433, vram32:7545, zh:5, tags:['zh','reason'], desc:'瀏覽器內最強的中文選項之一，需 8 GB 以上顯示記憶體。'}
+];
+
+/* 本機程式（GGUF）推薦清單：repo 與大小整理自 askloci.ai（2026-11-14 更新）與 worldbuild.io（2026-11-20）。
+   ollama 欄位為官方模型庫名稱（未逐一驗證；verify:true 代表來源較少、需再確認），一律另附 hf.co 下載寫法。 */
+const NATIVE_CATALOG = [
+  {name:'LFM2.5 1.2B Instruct', repo:'LiquidAI/LFM2.5-1.2B-Instruct-GGUF', gb:0.7, ram:3, zh:2, tags:['fast'], desc:'低階手機、舊電腦也能跑的超輕量模型。'},
+  {name:'Qwen3.5 2B', repo:'unsloth/Qwen3.5-2B-GGUF', gb:1.3, ram:4, zh:4, ollama:'qwen3.5:2b', tags:['zh','fast'], desc:'4 GB 手機與入門筆電首選，中文好。'},
+  {name:'Qwen3.5 4B', repo:'unsloth/Qwen3.5-4B-GGUF', gb:2.7, ram:6, zh:5, ollama:'qwen3.5:4b', verify:true, tags:['zh'], desc:'6–8 GB 裝置的中文主力模型（純文字）。'},
+  {name:'Gemma 4 E2B', repo:'unsloth/gemma-4-E2B-it-GGUF', gb:3.1, ram:6, zh:3, ollama:'gemma4:e2b', verify:true, tags:['vision'], desc:'可看圖片的手機級模型。'},
+  {name:'Gemma 4 E4B', repo:'unsloth/gemma-4-E4B-it-GGUF', gb:5.0, ram:10, zh:3, ollama:'gemma4:e4b', tags:['vision'], desc:'12 GB 手機、16 GB 筆電的多模態主力。'},
+  {name:'Qwen3.5 9B', repo:'unsloth/Qwen3.5-9B-GGUF', gb:5.7, ram:12, zh:5, ollama:'qwen3.5:9b', tags:['zh','reason'], desc:'16 GB 電腦或 8 GB 顯卡的中文高品質選擇。'},
+  {name:'Gemma 4 12B', repo:'unsloth/gemma-4-12b-it-GGUF', gb:7.1, ram:16, zh:3, ollama:'gemma4:12b', verify:true, tags:['vision'], desc:'12 GB 顯卡或 24–32 GB 電腦。'},
+  {name:'gpt-oss 20B', repo:'unsloth/gpt-oss-20b-GGUF', gb:11.6, ram:20, zh:3, ollama:'gpt-oss:20b', tags:['reason','code'], desc:'OpenAI 開放權重推理模型，16 GB 顯卡可跑。'},
+  {name:'Qwen3.8 27B', repo:'unsloth/Qwen3.8-27B-GGUF', gb:16.5, ram:28, zh:5, verify:true, tags:['zh','reason','code'], desc:'32 GB 以上電腦或 24 GB 顯卡的高階選擇（2026-08 發布，資料來源單一，請確認）。'},
+  {name:'Gemma 4 26B A4B', repo:'unsloth/gemma-4-26B-A4B-it-GGUF', gb:16.9, ram:28, zh:3, verify:true, tags:['vision','fast'], desc:'混合專家架構，速度接近 4B、品質接近 26B。'}
+];
+
+const PERSONAS = {
+  assistant:'你是離線運作的 AI 助理，回答準確、有條理、實用。不確定時請直接說不確定。',
+  translator:'你是專業翻譯，請提供自然流暢、符合語境的翻譯，必要時補充簡短用語說明。',
+  coder:'你是資深軟體工程師，請提供乾淨、可執行、附清楚註解的程式碼與除錯建議。',
+  writer:'你是商務溝通與文案專家，擅長撰寫信件、提案摘要、社群貼文與潤飾文句。',
+  notes:'你是筆記整理專家，請把零散內容整理成清楚的標題、條列重點與待辦清單。',
+  thinker:'你是邏輯推理專家，請先拆解問題的假設與步驟，再給出嚴謹、可執行的結論。'
+};
+
+/* 參數定義：be = 適用引擎（webllm 瀏覽器 / ollama / openai 相容 API） */
+const PARAM_SCHEMA = [
+  {g:'取樣', k:'temperature', t:'range', min:0, max:2, step:0.05, label:'溫度 Temperature', help:'越高越有創意、越低越穩定。事實問答建議 0.2–0.5。', be:['webllm','ollama','openai']},
+  {g:'取樣', k:'top_p', t:'range', min:0.05, max:1, step:0.01, label:'Top-P', help:'只從累積機率前 P 的詞中挑選。', be:['webllm','ollama','openai']},
+  {g:'取樣', k:'top_k', t:'range', min:0, max:200, step:1, label:'Top-K', help:'只從機率最高的 K 個詞中挑選，0 代表不限制。', be:['ollama','openai']},
+  {g:'取樣', k:'min_p', t:'range', min:0, max:0.5, step:0.01, label:'Min-P', help:'過濾機率低於「最高機率 × Min-P」的詞，小模型很有效。', be:['ollama','openai']},
+  {g:'取樣', k:'repeat_penalty', t:'range', min:0.8, max:2, step:0.01, label:'重複懲罰 Repeat penalty', help:'大於 1 可減少鬼打牆重複。', be:['webllm','ollama','openai']},
+  {g:'取樣', k:'repeat_last_n', t:'number', min:-1, max:4096, step:1, label:'重複檢查範圍', help:'往回檢查多少個 token 是否重複，-1 為整個上下文。', be:['ollama','openai']},
+  {g:'取樣', k:'frequency_penalty', t:'range', min:-2, max:2, step:0.05, label:'頻率懲罰', help:'依出現次數降低重複用詞。', be:['webllm','ollama','openai']},
+  {g:'取樣', k:'presence_penalty', t:'range', min:-2, max:2, step:0.05, label:'存在懲罰', help:'鼓勵談新話題。', be:['webllm','ollama','openai']},
+  {g:'取樣', k:'seed', t:'text', label:'隨機種子 Seed', help:'填數字可重現相同回答，留空為隨機。', be:['webllm','ollama','openai']},
+  {g:'長度與記憶', k:'max_tokens', t:'number', min:16, max:32768, step:16, label:'最大輸出長度', help:'單次回覆最多產生的 token 數。', be:['webllm','ollama','openai']},
+  {g:'長度與記憶', k:'num_ctx', t:'number', min:512, max:262144, step:512, label:'上下文長度 Context', help:'模型一次能「記住」的 token 數；越大越吃記憶體。瀏覽器模式上限由模型決定（多為 4096）。', be:['webllm','ollama']},
+  {g:'長度與記憶', k:'history_turns', t:'range', min:0, max:40, step:1, label:'帶入歷史輪數', help:'每次送出時附帶前幾輪對話。', be:['webllm','ollama','openai']},
+  {g:'長度與記憶', k:'stop', t:'text', label:'停止詞', help:'遇到這些字就停止，以逗號分隔，最多 4 個。', be:['webllm','ollama','openai']},
+  {g:'長度與記憶', k:'system_prompt', t:'textarea', label:'系統提示詞', help:'留空則使用對話頁選擇的角色。', be:['webllm','ollama','openai']},
+  {g:'效能與硬體', k:'num_thread', t:'number', min:0, max:256, step:1, label:'CPU 執行緒', help:'0 為自動。建議設為實體核心數。', be:['ollama']},
+  {g:'效能與硬體', k:'num_gpu', t:'number', min:-1, max:999, step:1, label:'GPU 層數', help:'-1 為自動，0 為純 CPU，數字越大越多層放顯卡。', be:['ollama']},
+  {g:'效能與硬體', k:'num_batch', t:'number', min:16, max:4096, step:16, label:'批次大小 Batch', help:'讀入提示詞時一次處理的 token 數，越大越快但越吃記憶體。', be:['ollama']},
+  {g:'效能與硬體', k:'prefill_chunk', t:'number', min:128, max:4096, step:128, label:'預填區塊大小', help:'瀏覽器模式讀入提示詞的區塊大小，手機建議 512。', be:['webllm']},
+  {g:'效能與硬體', k:'keep_alive', t:'text', label:'模型常駐時間', help:'用完後模型留在記憶體多久，例如 5m、1h、-1（永久）、0（立即釋放）。', be:['ollama']},
+  {g:'效能與硬體', k:'use_mmap', t:'bool', label:'記憶體對映 mmap', help:'開啟可加快載入、降低記憶體尖峰。', be:['ollama']},
+  {g:'效能與硬體', k:'use_mlock', t:'bool', label:'鎖定記憶體 mlock', help:'避免模型被換到硬碟，但會長期占用 RAM。', be:['ollama']},
+  {g:'輸出格式', k:'stream', t:'bool', label:'串流輸出', help:'邊產生邊顯示。', be:['webllm','ollama','openai']},
+  {g:'輸出格式', k:'json_mode', t:'bool', label:'JSON 模式', help:'強制輸出 JSON 格式。', be:['webllm','ollama','openai']},
+  {g:'輸出格式', k:'think', t:'select', opts:[['auto','依模型預設'],['on','開啟思考'],['off','關閉思考']], label:'思考模式', help:'Qwen3/3.5、DeepSeek R1 等推理模型可先思考再回答；關閉會更快。', be:['webllm','ollama']}
+];
+
+const SAMPLING_PRESETS = {
+  precise:{temperature:0.2, top_p:0.85, top_k:20, min_p:0.05, repeat_penalty:1.05, frequency_penalty:0, presence_penalty:0},
+  balanced:{temperature:0.7, top_p:0.9, top_k:40, min_p:0.05, repeat_penalty:1.1, frequency_penalty:0, presence_penalty:0},
+  creative:{temperature:1.05, top_p:0.95, top_k:80, min_p:0.03, repeat_penalty:1.12, frequency_penalty:0.2, presence_penalty:0.3},
+  coding:{temperature:0.15, top_p:0.8, top_k:20, min_p:0.05, repeat_penalty:1.05, frequency_penalty:0, presence_penalty:0}
+};
+
+/* ======================================================================
+   1. 工具函式
+   ====================================================================== */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone = (o) => JSON.parse(JSON.stringify(o));
+function lsGet(k, fb){ try{ const v = localStorage.getItem(LS + k); return v == null ? fb : JSON.parse(v); }catch(e){ return fb; } }
+function lsSet(k, v){ try{ localStorage.setItem(LS + k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+function fmtBytes(b){ if(b == null || isNaN(b)) return '未知'; const u=['B','KB','MB','GB','TB']; let i=0; b=Number(b); while(b>=1024 && i<u.length-1){ b/=1024; i++; } return (i>=3? b.toFixed(2): b.toFixed(i?1:0)) + ' ' + u[i]; }
+function toast(msg, type){ const el = document.createElement('div'); el.className = 'toast ' + (type||''); el.textContent = msg; $('toasts').appendChild(el); setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(), 320); }, type==='bad'?5200:3000); }
+function modal(opts){
+  return new Promise(resolve => {
+    const root = $('modalRoot');
+    const bg = document.createElement('div'); bg.className = 'modal-bg';
+    const inputHtml = opts.input !== undefined ? `<input class="input" id="__mIn" value="${esc(opts.input)}" style="margin-bottom:14px">` : '';
+    bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true"><h3>${esc(opts.title||'')}</h3>${opts.html ? `<div style="margin-bottom:14px;font-size:14px;color:var(--sub)">${opts.html}</div>` : `<p>${esc(opts.message||'')}</p>`}${inputHtml}
+      <div class="row" style="justify-content:flex-end">${opts.cancel===false?'':`<button class="btn" data-r="0">${esc(opts.cancelText||'取消')}</button>`}<button class="btn ${opts.danger?'danger':'primary'}" data-r="1">${esc(opts.okText||'確定')}</button></div></div>`;
+    const done = (ok) => { const v = opts.input !== undefined ? (bg.querySelector('#__mIn')||{}).value : ok; bg.remove(); resolve(ok ? (opts.input!==undefined ? v : true) : (opts.input!==undefined ? null : false)); };
+    bg.addEventListener('click', e => { if(e.target === bg) done(false); const r = e.target.closest('[data-r]'); if(r) done(r.dataset.r === '1'); });
+    bg.addEventListener('keydown', e => { if(e.key==='Escape') done(false); if(e.key==='Enter' && opts.input!==undefined) done(true); });
+    root.appendChild(bg);
+    const f = bg.querySelector('#__mIn') || bg.querySelector('[data-r="1"]'); f && f.focus();
+  });
+}
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); toast('已複製', 'ok'); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); toast('已複製','ok'); }catch(_){ toast('無法自動複製，請手動選取','warn'); } ta.remove(); }
+}
+function downloadText(name, text, mime){ const blob = new Blob([text], {type: mime || 'text/plain;charset=utf-8'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+const stamp = () => { const d=new Date(); const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes()); };
+
+/* 極簡 IndexedDB 鍵值儲存（存資料夾權限與離線引擎） */
+const idb = (() => {
+  let dbp = null;
+  function open(){ if(dbp) return dbp; dbp = new Promise((res, rej) => { try{ const r = indexedDB.open(APP_ID, 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }catch(e){ rej(e); } }); return dbp; }
+  async function tx(mode, fn){ const db = await open(); return new Promise((res, rej) => { const t = db.transaction('kv', mode); const st = t.objectStore('kv'); const r = fn(st); t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error); }); }
+  return { get:k=>tx('readonly', s=>s.get(k)).catch(()=>undefined), set:(k,v)=>tx('readwrite', s=>s.put(v,k)), del:k=>tx('readwrite', s=>s.delete(k)) };
+})();
+
+/* 安全的 Markdown 轉 HTML（先跳脫再轉換） */
+function md(src){
+  const blocks = [];
+  let s = String(src || '').replace(/```([\w+-]*)\n?([\s\S]*?)(```|$)/g, (_, lang, code) => { blocks.push(`<pre><code>${esc(code.replace(/\n$/,''))}</code></pre>`); return `\u0000${blocks.length-1}\u0000`; });
+  s = esc(s);
+  s = s.replace(/^(\|.+\|)\n\|[\s:|-]+\|\n((?:\|.*\|\n?)*)/gm, (m, head, body) => {
+    const cells = r => r.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+    return '<table><tr>' + cells(head).map(c=>`<th>${c}</th>`).join('') + '</tr>' + body.trim().split('\n').filter(Boolean).map(r => '<tr>' + cells(r).map(c=>`<td>${c}</td>`).join('') + '</tr>').join('') + '</table>\n';
+  });
+  s = s.replace(/^#{1,6} (.+)$/gm, '<h4>$1</h4>')
+       .replace(/^&gt; ?(.*)$/gm, '<blockquote>$1</blockquote>')
+       .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+       .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<i>$2</i>')
+       .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+       .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  s = s.replace(/(?:^[-*] .+(?:\n|$))+/gm, m => '<ul>' + m.trim().split('\n').map(l => '<li>' + l.replace(/^[-*] /,'') + '</li>').join('') + '</ul>');
+  s = s.replace(/(?:^\d+\. .+(?:\n|$))+/gm, m => '<ol>' + m.trim().split('\n').map(l => '<li>' + l.replace(/^\d+\. /,'') + '</li>').join('') + '</ol>');
+  s = s.split(/\n{2,}/).map(p => /^\s*<(ul|ol|table|h4|blockquote|pre)|\u0000/.test(p) ? p : '<p>' + p.replace(/\n/g,'<br>') + '</p>').join('');
+  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => blocks[+i]);
+}
+function renderAnswer(text){
+  let html = '', rest = String(text||'');
+  const m = rest.match(/^\s*<think>([\s\S]*?)(<\/think>|$)/);
+  if(m){ const closed = !!m[2]; html += `<details class="think" ${closed?'':'open'}><summary>${closed?'思考過程':'思考中…'}</summary>${md(m[1].trim())}</details>`; rest = rest.slice(m[0].length); }
+  return html + md(rest.trim());
+}
+
+/* ======================================================================
+   2. 狀態
+   ====================================================================== */
+const DEFAULT_UI = { theme:'auto', accent:'blue', font:15, zhTw:true, tts:false, enterSend:true, ollamaUrl:'http://127.0.0.1:11434', oaiUrl:'http://127.0.0.1:8080/v1', oaiKey:'', cacheBackend:'cache', backend:'webllm', model:{webllm:'', ollama:'', openai:''}, persona:'assistant', os:'' };
+const state = {
+  ui: Object.assign(clone(DEFAULT_UI), lsGet('ui', {})),
+  hwOverride: lsGet('hwOverride', {}),
+  profiles: lsGet('profiles', []),          // 使用者設定檔 [{id,name,params,createdAt}]
+  defaultProfileId: lsGet('defaultProfileId', 'reco'),
+  activeProfileId: null,
+  chats: lsGet('chats', []),
+  activeChatId: lsGet('activeChatId', null),
+  hw: null, reco: null,
+  engine: null, engineModelId: null, webllm: null,
+  generating: false, abort: null,
+  attach: null, paramFilter: 'all', downloads: {},
+  ollamaModels: [], oaiModels: [], cachedWeb: {}
+};
+state.ui.model = Object.assign({webllm:'', ollama:'', openai:''}, state.ui.model || {});
+state.activeProfileId = state.defaultProfileId;
+function saveUi(){ lsSet('ui', state.ui); }
+function saveProfiles(){ lsSet('profiles', state.profiles); lsSet('defaultProfileId', state.defaultProfileId); }
+function saveChats(){
+  state.chats = state.chats.slice(0, 60);
+  if(!lsSet('chats', state.chats)){ state.chats = state.chats.slice(0, 20); lsSet('chats', state.chats); toast('儲存空間不足，只保留最近 20 則對話','warn'); }
+  lsSet('activeChatId', state.activeChatId);
+}
+
+/* ======================================================================
+   3. 硬體偵測
+   ====================================================================== */
+async function detectHardware(){
+  const ua = navigator.userAgent || '';
+  const uad = navigator.userAgentData;
+  const hw = { ua, secure: window.isSecureContext, protocol: location.protocol };
+  let hev = {};
+  if(uad && uad.getHighEntropyValues){ try{ hev = await uad.getHighEntropyValues(['platform','platformVersion','model','architecture','bitness','fullVersionList']); }catch(e){} }
+  const isIPad = /iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  let os = 'unknown';
+  const plat = (hev.platform || (uad && uad.platform) || navigator.platform || '').toLowerCase();
+  if(/android/i.test(ua) || plat==='android') os = 'android';
+  else if(/iphone|ipod/i.test(ua) || isIPad) os = 'ios';
+  else if(/win/.test(plat) || /Windows/.test(ua)) os = 'windows';
+  else if(/mac/.test(plat) || /Mac OS X/.test(ua)) os = 'mac';
+  else if(/linux|cros|x11/i.test(plat + ua)) os = 'linux';
+  hw.os = os;
+  const mobileFlag = (uad && uad.mobile) || /Mobi|iPhone/i.test(ua);
+  const minSide = Math.min(screen.width, screen.height);
+  hw.type = os==='ios' ? (isIPad ? 'tablet' : 'phone') : os==='android' ? (mobileFlag && minSide < 600 ? 'phone' : 'tablet') : 'desktop';
+  if(hw.type==='desktop' && (navigator.getBattery)){ try{ const b = await navigator.getBattery(); if(b && !(b.charging && b.level===1 && b.chargingTime===0)) hw.type = 'laptop'; }catch(e){} }
+  hw.model = hev.model || ''; hw.arch = [hev.architecture, hev.bitness ? hev.bitness+'-bit' : ''].filter(Boolean).join(' ');
+  hw.osVer = hev.platformVersion || '';
+  const br = (hev.fullVersionList || (uad && uad.brands) || []).filter(b => !/Not.?A.?Brand|Chromium/i.test(b.brand)).map(b => b.brand + ' ' + b.version.split('.')[0]);
+  hw.browser = br[0] || (/Firefox\/(\d+)/.exec(ua) ? 'Firefox ' + /Firefox\/(\d+)/.exec(ua)[1] : /Version\/(\d+[\d.]*).*Safari/.exec(ua) ? 'Safari ' + /Version\/(\d+[\d.]*)/.exec(ua)[1] : '未知瀏覽器');
+  hw.isSafari = /Safari/.test(ua) && !/Chrome|Chromium|CriOS|Edg|FxiOS/.test(ua);
+  hw.logical = navigator.hardwareConcurrency || null;
+  hw.ramReported = navigator.deviceMemory || null;
+  // WebGPU
+  hw.webgpu = false; hw.f16 = false; hw.gpu = ''; hw.gpuVendor=''; hw.gpuArch=''; hw.maxBuffer = null; hw.maxStorage = null; hw.fallbackAdapter = false;
+  if(navigator.gpu){
+    try{
+      const ad = await navigator.gpu.requestAdapter({powerPreference:'high-performance'});
+      if(ad){
+        hw.webgpu = true; hw.f16 = ad.features.has('shader-f16');
+        const info = ad.info || (ad.requestAdapterInfo ? await ad.requestAdapterInfo() : {});
+        hw.gpuVendor = info.vendor || ''; hw.gpuArch = info.architecture || '';
+        hw.gpu = info.description || [info.vendor, info.architecture, info.device].filter(Boolean).join(' ') || 'WebGPU 顯示卡';
+        hw.fallbackAdapter = !!(info.isFallbackAdapter || ad.isFallbackAdapter);
+        hw.maxBuffer = ad.limits.maxBufferSize; hw.maxStorage = ad.limits.maxStorageBufferBindingSize;
+      }else hw.gpuErr = '瀏覽器有 WebGPU，但找不到可用的顯示卡（可能被封鎖或驅動不支援）';
+    }catch(e){ hw.gpuErr = 'WebGPU 初始化失敗：' + (e.message||e); }
+  }else hw.gpuErr = hw.secure ? '此瀏覽器未提供 WebGPU' : '非 https 安全連線，瀏覽器停用 WebGPU';
+  hw.discreteGuess = /nvidia|amd|radeon|geforce|rtx|gtx|arc/i.test(hw.gpu + hw.gpuVendor) && !/integrated|vega \d|radeon\(tm\) graphics/i.test(hw.gpu);
+  // 儲存空間
+  hw.quota = null; hw.usage = null; hw.persisted = null;
+  if(navigator.storage && navigator.storage.estimate){ try{ const e = await navigator.storage.estimate(); hw.quota = e.quota; hw.usage = e.usage; }catch(e){} }
+  if(navigator.storage && navigator.storage.persisted){ try{ hw.persisted = await navigator.storage.persisted(); }catch(e){} }
+  hw.fsa = 'showDirectoryPicker' in window;
+  hw.opfs = !!(navigator.storage && navigator.storage.getDirectory);
+  hw.net = navigator.connection ? {type: navigator.connection.effectiveType, saveData: navigator.connection.saveData, downlink: navigator.connection.downlink} : null;
+  hw.screen = screen.width + '×' + screen.height + ' @' + (window.devicePixelRatio||1) + 'x';
+  hw.touch = navigator.maxTouchPoints || 0;
+  // 套用手動校正
+  const ov = state.hwOverride;
+  if(ov.type) hw.type = ov.type;
+  hw.ram = ov.ram ? Number(ov.ram) : estimateRam(hw);
+  hw.ramSource = ov.ram ? '手動填寫' : (hw.ramReported ? (hw.ramReported === 8 ? '瀏覽器回報 8 GB（此值常是上限，實際可能更高，請手動校正）' : '瀏覽器回報（數值會被取概略值）') : '瀏覽器不提供，依裝置類型推估，請手動校正');
+  hw.vram = ov.vram !== undefined && ov.vram !== '' ? Number(ov.vram) : null;
+  hw.cores = ov.cores ? Number(ov.cores) : (hw.logical ? (hw.type==='phone'||hw.type==='tablet' ? hw.logical : Math.max(1, Math.round(hw.logical/2))) : 4);
+  state.hw = hw;
+  if(!state.ui.os) { state.ui.os = os==='unknown' ? 'windows' : os; }
+  state.reco = computeReco(hw);
+  return hw;
+}
+function estimateRam(hw){
+  if(hw.ramReported){
+    return hw.ramReported; // 部分瀏覽器回報值有上限（常見 8 GB），實際可能更高，介面會提示手動校正
+  }
+  if(hw.os==='ios') return hw.type==='tablet' ? 8 : 6;  // Safari 不提供，依近年機種保守估計
+  if(hw.type==='phone') return 6;
+  if(hw.type==='tablet') return 8;
+  return 8;
+}
+
+/* ======================================================================
+   4. 推薦引擎（模型 + 參數）
+   ====================================================================== */
+function computeReco(hw){
+  const mobile = hw.type==='phone' || hw.type==='tablet';
+  // 瀏覽器 WebGPU 可用記憶體預算（MB）
+  let webBudget;
+  if(hw.vram) webBudget = hw.vram * 1024 * 0.8;
+  else if(mobile) webBudget = hw.ram * 1024 * (hw.ram >= 12 ? 0.42 : 0.36);
+  else webBudget = hw.ram * 1024 * (hw.discreteGuess ? 0.5 : 0.4);
+  if(hw.fallbackAdapter) webBudget = Math.min(webBudget, 1200);
+  // 本機程式可用預算（GB）：有獨顯以 VRAM 為主，否則以 RAM
+  const nativeBudget = hw.vram && hw.vram >= 4 ? Math.max(hw.vram * 0.85, hw.ram * 0.45) : hw.ram * (mobile ? 0.45 : 0.6);
+  const capGB = Math.max(nativeBudget, hw.webgpu && !hw.fallbackAdapter ? webBudget/1024 : 0);
+  const tier = capGB < 3 ? 0 : capGB < 5 ? 1 : capGB < 9 ? 2 : capGB < 16 ? 3 : 4;
+  const tierName = ['入門','輕量','主流','進階','高階'][tier];
+
+  const web = WEB_CATALOG.map(m => {
+    const usable = hw.webgpu && (hw.f16 || !m.noF32);
+    let vram = m.vram; let id = m.id;
+    if(hw.webgpu && !hw.f16 && !m.noF32){ id = m.id.replace('q4f16_1','q4f32_1'); vram = m.vram32 || Math.round(m.vram * 1.2); }
+    const fit = vram <= webBudget * 0.8 ? 'good' : vram <= webBudget ? 'ok' : 'tight';
+    return Object.assign({}, m, {runId:id, runVram:vram, usable, fit});
+  });
+  const score = m => (m.fit==='good'?100:m.fit==='ok'?60:-200) + m.zh*12 + (state.ui.zhTw ? m.zh*6 : 0) + Math.min(m.runVram, webBudget)/120;
+  const webSorted = web.filter(m=>m.usable).sort((a,b)=>score(b)-score(a));
+  const native = NATIVE_CATALOG.map(m => Object.assign({}, m, {fit: m.gb*1.25 <= nativeBudget*0.8 ? 'good' : m.gb*1.25 <= nativeBudget ? 'ok' : 'tight'}));
+  const nScore = m => (m.fit==='good'?100:m.fit==='ok'?55:-200) + m.zh*10 + m.gb*4;
+  const nativeSorted = native.slice().sort((a,b)=>nScore(b)-nScore(a));
+
+  // 推薦參數
+  const ctx = mobile ? (hw.ram>=12 ? 8192 : hw.ram>=8 ? 4096 : 2048) : (nativeBudget>=20 ? 16384 : nativeBudget>=10 ? 8192 : 4096);
+  const params = Object.assign({}, SAMPLING_PRESETS.balanced, {
+    repeat_last_n: 64, seed:'', max_tokens: mobile ? 1024 : 2048, num_ctx: ctx, history_turns: mobile ? 6 : 10, stop:'', system_prompt:'',
+    num_thread: mobile ? 0 : Math.max(1, Math.min(hw.cores, 16)), num_gpu: (hw.webgpu || hw.vram) ? -1 : 0,
+    num_batch: mobile || hw.ram < 8 ? 256 : 512, prefill_chunk: mobile ? 512 : (webBudget >= 4000 ? 2048 : 1024),
+    keep_alive: mobile ? '5m' : '30m', use_mmap: true, use_mlock: false, stream: true, json_mode: false, think: tier <= 1 ? 'off' : 'auto'
+  });
+  return { tier, tierName, webBudget, nativeBudget, web, webSorted, native, nativeSorted, params, mobile };
+}
+
+/* ======================================================================
+   5. 參數設定檔
+   ====================================================================== */
+function recoProfile(){ return { id:'reco', name:'推薦（依此裝置硬體）', params: clone(state.reco.params), builtin:true }; }
+function allProfiles(){ return [recoProfile(), ...state.profiles]; }
+function getProfile(id){ return allProfiles().find(p => p.id === id) || recoProfile(); }
+function activeParams(){ const p = getProfile(state.activeProfileId); return Object.assign({}, state.reco.params, p.params); }
+function newId(){ return 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function sanitizeParams(src){
+  const out = {};
+  PARAM_SCHEMA.forEach(d => {
+    if(!(d.k in src)) return; let v = src[d.k];
+    if(d.t==='bool') v = !!v;
+    else if(d.t==='range' || d.t==='number'){ v = Number(v); if(isNaN(v)) return; v = Math.min(d.max, Math.max(d.min, v)); }
+    else if(d.t==='select'){ if(!d.opts.some(o=>o[0]===v)) return; }
+    else v = String(v).slice(0, d.k==='system_prompt' ? 8000 : 300);
+    out[d.k] = v;
+  });
+  return out;
+}
+
+/* ======================================================================
+   6. 導覽
+   ====================================================================== */
+const ICONS = {
+  chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 01-11.6 7.1L4 20l1-4.6A8 8 0 1121 12z"/></svg>',
+  hw:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg>',
+  models:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>',
+  params:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
+  storage:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>',
+  help:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.6-1.5 1.1-1.5 2.2M12 17h0"/></svg>'
+};
+const TABS = [['chat','對話'],['hw','硬體與推薦'],['models','模型下載'],['params','參數設定'],['storage','儲存與備份'],['help','工具與說明']];
+const SHORT = {chat:'對話',hw:'推薦',models:'下載',params:'參數',storage:'儲存',help:'工具'};
+function buildNav(){
+  $('sideNav').innerHTML = TABS.map(([k,n]) => `<button class="nav-btn" data-tab="${k}">${ICONS[k]}<span>${n}</span></button>`).join('');
+  $('tabbar').innerHTML = TABS.map(([k]) => `<button data-tab="${k}">${ICONS[k]}<span>${SHORT[k]}</span></button>`).join('');
+  document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+}
+function switchTab(k){
+  TABS.forEach(([t]) => $('tab-'+t).classList.toggle('hidden', t!==k));
+  document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-current', b.dataset.tab===k ? 'page' : 'false'));
+  $('pageTitle').textContent = TABS.find(t=>t[0]===k)[1];
+  lsSet('tab', k);
+  if(k==='models'){ renderWebList(); refreshOllama(true); }
+  if(k==='storage'){ renderPaths(); renderCacheModels(); renderEngineState(); }
+  if(k==='params') renderParams();
+  window.scrollTo(0,0);
+}
+
+/* ======================================================================
+   7. 硬體與推薦畫面
+   ====================================================================== */
+const OS_NAME = {windows:'Windows', mac:'macOS', linux:'Linux', android:'Android', ios:'iOS / iPadOS', unknown:'未知系統'};
+const TYPE_NAME = {phone:'手機', tablet:'平板', laptop:'筆電', desktop:'桌機'};
+function fitChip(fit){ return fit==='good' ? '<span class="chip ok">順暢</span>' : fit==='ok' ? '<span class="chip acc">可執行</span>' : '<span class="chip warn">記憶體偏緊</span>'; }
+function renderHw(){
+  const h = state.hw, r = state.reco;
+  const stats = [
+    ['裝置', `${TYPE_NAME[h.type]||h.type} · ${OS_NAME[h.os]}`, [h.model, h.osVer && ('版本 ' + h.osVer), h.browser].filter(Boolean).join(' · ')],
+    ['記憶體 RAM', h.ram + ' GB', h.ramSource],
+    ['顯示卡 / WebGPU', h.webgpu ? (h.gpu || 'WebGPU') : '無法使用', h.webgpu ? (h.f16 ? '支援 shader-f16 半精度加速' : '不支援 f16，會改用較大的 f32 版本') + (h.fallbackAdapter ? '（軟體模擬，速度很慢）' : '') : (h.gpuErr||'')],
+    ['CPU', (h.logical || '?') + ' 執行緒', '實體核心約 ' + h.cores + (state.hwOverride.cores ? '（手動）' : '（推估）')],
+    ['顯示卡記憶體', h.vram ? h.vram + ' GB' : '未提供', h.vram ? '手動填寫' : '瀏覽器無法讀取，有獨顯請手動填'],
+    ['網站可用儲存', h.quota ? fmtBytes(h.quota - (h.usage||0)) : '未知', h.quota ? '已用 ' + fmtBytes(h.usage) + (h.persisted ? ' · 已永久儲存' : ' · 未申請永久儲存') : ''],
+    ['資料夾存取', h.fsa ? '支援' : '不支援', h.fsa ? '可直接下載到指定資料夾、備份' : '下載會存到瀏覽器預設的下載資料夾'],
+    ['連線', navigator.onLine ? '在線' : '離線', h.net ? `${h.net.type||''}${h.net.saveData?' · 省流量模式':''}` : (h.secure ? 'https 安全連線' : '非安全連線（' + h.protocol + '）')]
+  ];
+  $('hwStats').innerHTML = stats.map(s => `<div class="stat"><div class="k">${s[0]}</div><div class="v">${esc(s[1])}</div><div class="s">${esc(s[2])}</div></div>`).join('');
+  const det = {
+    'User Agent': h.ua, '安全環境 (isSecureContext)': String(h.secure), '開啟方式': h.protocol, 'navigator.deviceMemory': h.ramReported ?? '不提供', 'hardwareConcurrency': h.logical ?? '不提供',
+    'GPU 廠商 / 架構': [h.gpuVendor, h.gpuArch].filter(Boolean).join(' / ') || '—', 'maxBufferSize': h.maxBuffer ? fmtBytes(h.maxBuffer) : '—', 'maxStorageBufferBindingSize': h.maxStorage ? fmtBytes(h.maxStorage) : '—',
+    'CPU 架構': h.arch || '—', '螢幕': h.screen, '觸控點': h.touch, 'OPFS': String(h.opfs), 'File System Access': String(h.fsa),
+    '瀏覽器模型預算': Math.round(r.webBudget) + ' MB', '本機程式預算': r.nativeBudget.toFixed(1) + ' GB'
+  };
+  $('hwDetail').innerHTML = Object.entries(det).map(([k,v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
+  const ov = state.hwOverride; $('ovType').value = ov.type||''; $('ovRam').value = ov.ram||''; $('ovVram').value = ov.vram ?? ''; $('ovCores').value = ov.cores||'';
+  $('tierChip').textContent = r.tierName + '級裝置';
+  const top = r.webSorted[0], ntop = r.nativeSorted[0];
+  $('recoSummary').innerHTML = h.webgpu
+    ? `這台裝置的瀏覽器約可分配 <b>${(r.webBudget/1024).toFixed(1)} GB</b> 給 AI，首推 <b>${esc(top ? top.name : '—')}</b>；若改用本機程式（約 ${r.nativeBudget.toFixed(1)} GB 可用），首推 <b>${esc(ntop.name)}</b>。`
+    : `此瀏覽器目前無法使用 WebGPU（${esc(h.gpuErr||'')}）。可改用本機程式（Ollama、llama.cpp）或手機 App；以 ${r.nativeBudget.toFixed(1)} GB 可用記憶體估算，首推 <b>${esc(ntop.name)}</b>。`;
+  $('recoWeb').innerHTML = h.webgpu ? r.webSorted.slice(0, 6).map(webCard).join('') : `<div class="note warn" style="grid-column:1/-1">無法使用瀏覽器內建模式。iPhone/iPad 請更新到 iOS 26 以上並用 Safari；Android 請用最新版 Chrome；電腦建議 Chrome 或 Edge。透過 https 網址開啟才會啟用 WebGPU。</div>`;
+  $('recoNative').innerHTML = r.nativeSorted.slice(0, 6).map(nativeCard).join('');
+  $('dataChecked').textContent = DATA_CHECKED_AT;
+}
+function zhStars(n){ return '中文 ' + '●'.repeat(n) + '○'.repeat(5-n); }
+function webCard(m){
+  const cached = state.cachedWeb[m.runId];
+  const loaded = state.engineModelId === m.runId;
+  return `<div class="list-item model-card"><div class="top"><div><div class="li-title">${esc(m.name)}</div><div class="li-sub">${esc(m.vendor)} · 約 ${(m.runVram/1024).toFixed(1)} GB · ${zhStars(m.zh)}</div></div>${fitChip(m.fit)}</div>
+  <div class="mini">${esc(m.desc)}</div>
+  <div class="row">${loaded ? '<span class="chip ok">使用中</span>' : `<button class="btn sm primary" data-webload="${esc(m.runId)}">${cached ? '離線啟動' : '下載並啟動'}</button>`}${cached ? '<span class="chip ok">已下載</span>' : ''}</div></div>`;
+}
+function nativeCard(m){
+  const pull = 'hf.co/' + m.repo + ':Q4_K_M';
+  return `<div class="list-item model-card"><div class="top"><div><div class="li-title">${esc(m.name)}</div><div class="li-sub">Q4 約 ${m.gb} GB · 建議 RAM ${m.ram} GB+ · ${zhStars(m.zh)}</div></div>${fitChip(m.fit)}</div>
+  <div class="mini">${esc(m.desc)}${m.verify ? '（名稱或大小來源較少，下載前請確認）' : ''}</div>
+  <div class="row"><button class="btn sm primary" data-pull="${esc(m.ollama || pull)}" title="用 Ollama 下載">Ollama 下載</button><button class="btn sm" data-hfrepo="${esc(m.repo)}">看檔案</button><button class="btn sm ghost" data-copy="${esc('llama-server -hf ' + m.repo + ':Q4_K_M')}" title="複製 llama.cpp 指令">複製指令</button></div></div>`;
+}
+
+/* ======================================================================
+   8. 參數設定畫面
+   ====================================================================== */
+function renderProfileSelects(){
+  const opts = allProfiles().map(p => `<option value="${esc(p.id)}">${esc(p.name)}${p.id===state.defaultProfileId?'（預設）':''}</option>`).join('');
+  $('profileSel').innerHTML = opts; $('profileQuickSel').innerHTML = opts;
+  $('profileSel').value = state.activeProfileId; $('profileQuickSel').value = state.activeProfileId;
+  $('profileDefaultChip').classList.toggle('hidden', state.activeProfileId !== state.defaultProfileId);
+  const builtin = state.activeProfileId === 'reco';
+  $('btnRenameProfile').disabled = builtin; $('btnDeleteProfile').disabled = builtin;
+  $('btnRestoreReco').textContent = builtin ? '推薦值（自動）' : '還原為推薦值';
+  $('btnRestoreReco').disabled = builtin;
+}
+function renderParams(){
+  renderProfileSelects();
+  const prof = getProfile(state.activeProfileId);
+  const p = activeParams(); const reco = state.reco.params; const builtin = prof.id === 'reco';
+  const groups = {};
+  PARAM_SCHEMA.forEach(d => { if(state.paramFilter!=='all' && !d.be.includes(state.paramFilter)) return; (groups[d.g] = groups[d.g] || []).push(d); });
+  const beBadges = d => ['webllm','ollama','openai'].map(b => `<span class="badge-be ${d.be.includes(b)?'on':''}">${b==='webllm'?'瀏覽器':b==='ollama'?'Ollama':'相容API'}</span>`).join(' ');
+  $('paramGroups').innerHTML = (builtin ? `<div class="note" style="margin-top:14px">目前是自動「推薦」設定檔，修改任何參數時會自動另存成新設定檔，推薦值本身不會被改掉。</div>` : '') +
+    Object.entries(groups).map(([g, list]) => `<div class="card" style="margin-top:14px"><h2>${esc(g)}</h2>${list.map(d => {
+      const v = p[d.k]; const changed = JSON.stringify(v) !== JSON.stringify(reco[d.k]);
+      let ctrl;
+      if(d.t==='range') ctrl = `<div class="param-ctrl"><input type="range" data-pk="${d.k}" min="${d.min}" max="${d.max}" step="${d.step}" value="${esc(v)}"><input class="input" type="number" data-pk="${d.k}" min="${d.min}" max="${d.max}" step="${d.step}" value="${esc(v)}"></div>`;
+      else if(d.t==='number') ctrl = `<div class="param-ctrl"><span class="mini">範圍 ${d.min} ～ ${d.max}</span><input class="input" type="number" data-pk="${d.k}" min="${d.min}" max="${d.max}" step="${d.step}" value="${esc(v)}"></div>`;
+      else if(d.t==='bool') ctrl = `<label class="row"><input type="checkbox" data-pk="${d.k}" ${v?'checked':''}> <span class="mini">${v?'開啟':'關閉'}</span></label>`;
+      else if(d.t==='select') ctrl = `<select class="input" data-pk="${d.k}">${d.opts.map(o=>`<option value="${o[0]}" ${o[0]===v?'selected':''}>${o[1]}</option>`).join('')}</select>`;
+      else if(d.t==='textarea') ctrl = `<textarea class="input" rows="3" data-pk="${d.k}" placeholder="${esc(PERSONAS[state.ui.persona])}">${esc(v)}</textarea>`;
+      else ctrl = `<input class="input" data-pk="${d.k}" value="${esc(v)}">`;
+      return `<div class="param-row"><div class="param-head"><b>${esc(d.label)} ${changed ? `<span class="changed" title="推薦值：${esc(reco[d.k])}">已調整（推薦 ${esc(reco[d.k]===''?'空白':reco[d.k])}）</span>` : ''}</b><span>${beBadges(d)}</span></div><div class="param-help">${esc(d.help)}</div>${ctrl}</div>`;
+    }).join('')}</div>`).join('');
+  document.querySelectorAll('#beFilterSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.b===state.paramFilter ? 'true':'false'));
+}
+async function setParam(k, v){
+  const d = PARAM_SCHEMA.find(x=>x.k===k); if(!d) return;
+  let prof = state.profiles.find(p => p.id === state.activeProfileId);
+  if(!prof){ // 正在使用推薦設定檔 → 自動另存
+    prof = { id:newId(), name:'我的設定 ' + (state.profiles.length+1), params: clone(state.reco.params), createdAt: Date.now() };
+    state.profiles.push(prof); state.activeProfileId = prof.id;
+    toast('已另存為「' + prof.name + '」，推薦值保持不變', 'ok');
+  }
+  const clean = sanitizeParams({[k]: v});
+  if(k in clean){ prof.params[k] = clean[k]; saveProfiles(); }
+}
+function bindParamEvents(){
+  const pg = $('paramGroups');
+  const handler = (e, rerender) => {
+    const el = e.target.closest('[data-pk]'); if(!el) return;
+    const k = el.dataset.pk; const d = PARAM_SCHEMA.find(x=>x.k===k);
+    const v = d.t==='bool' ? el.checked : el.value;
+    const wasReco = state.activeProfileId === 'reco';
+    setParam(k, v);
+    if(d.t==='range'){ pg.querySelectorAll(`[data-pk="${k}"]`).forEach(x => { if(x!==el) x.value = v; }); }
+    if(rerender || wasReco) renderParams();
+  };
+  pg.addEventListener('input', e => { const el = e.target; if(el.type==='range' || el.type==='number') handler(e, false); else if(el.tagName==='TEXTAREA' || el.type==='text' || (el.tagName==='INPUT' && !el.type)) handler(e,false); });
+  pg.addEventListener('change', e => handler(e, true));
+}
+function exportProfiles(list, name){
+  const data = { app: APP_ID, kind:'profiles', version: APP_VER, exportedAt: new Date().toISOString(), device: { type: state.hw.type, os: state.hw.os, ram: state.hw.ram, gpu: state.hw.gpu }, defaultProfileName: getProfile(state.defaultProfileId).name, profiles: list.map(p => ({ name:p.name, params: Object.assign({}, state.reco.params, p.params) })) };
+  downloadText(name, JSON.stringify(data, null, 2), 'application/json');
+  toast('已匯出 ' + list.length + ' 組設定檔', 'ok');
+}
+async function importProfilesFromText(text){
+  let data; try{ data = JSON.parse(text); }catch(e){ toast('檔案不是有效的 JSON', 'bad'); return; }
+  let list = Array.isArray(data) ? data : (data.profiles || (data.params ? [data] : null));
+  if(!list || !list.length){ toast('找不到設定檔資料', 'bad'); return; }
+  const replace = state.profiles.length ? await modal({title:'匯入 ' + list.length + ' 組設定檔', message:'要「加入」到現有設定檔，還是「取代」現有的全部自訂設定檔？', okText:'加入', cancelText:'取代'}) : true;
+  if(!replace) state.profiles = [];
+  let firstId = null;
+  list.forEach(item => {
+    const params = sanitizeParams(item.params || {});
+    let name = String(item.name || '匯入的設定').slice(0, 40);
+    while(state.profiles.some(p => p.name === name)) name += '（匯入）';
+    const p = { id:newId(), name, params: Object.assign(clone(state.reco.params), params), createdAt: Date.now() };
+    state.profiles.push(p); if(!firstId) firstId = p.id;
+    if(data.defaultProfileName && item.name === data.defaultProfileName) firstId = p.id;
+  });
+  state.activeProfileId = firstId; saveProfiles(); renderParams();
+  toast('已匯入 ' + list.length + ' 組設定檔', 'ok');
+}
+
+/* ======================================================================
+   9. AI 引擎（WebLLM / Ollama / OpenAI 相容 / 示範）
+   ====================================================================== */
+async function loadWebllmModule(){
+  if(state.webllm) return state.webllm;
+  const saved = await idb.get('engine:' + WEBLLM_VER);
+  if(saved){
+    try{ const url = URL.createObjectURL(new Blob([saved], {type:'text/javascript'})); state.webllm = await import(url); return state.webllm; }
+    catch(e){ console.warn('離線引擎載入失敗，改用網路', e); }
+  }
+  if(!navigator.onLine) throw new Error('目前離線，且尚未把推理引擎存到本機（請到「儲存與備份 › 離線引擎」下載）');
+  state.webllm = await import(WEBLLM_URL);
+  return state.webllm;
+}
+function webAppConfig(w){ return { model_list: w.prebuiltAppConfig.model_list, cacheBackend: state.ui.cacheBackend || 'cache' }; }
+async function loadWebModel(modelId){
+  if(!state.hw.webgpu){ toast('此瀏覽器無法使用 WebGPU，請改用 Ollama 或其他引擎', 'bad'); return; }
+  if(state.downloads['web:'+modelId]) return;
+  const dl = addDownload('web:'+modelId, '瀏覽器模型：' + modelId);
+  try{
+    dl.update(0, '載入推理引擎…');
+    const w = await loadWebllmModule();
+    const rec = w.prebuiltAppConfig.model_list.find(x => x.model_id === modelId);
+    if(!rec) throw new Error('引擎 ' + WEBLLM_VER + ' 的內建清單找不到 ' + modelId + '（不會自動換成其他模型）');
+    if(state.engine && state.engine.unload){ dl.update(0, '釋放先前模型…'); try{ await state.engine.unload(); }catch(e){} }
+    state.engine = null; state.engineModelId = null; updateEnginePill();
+    const p = activeParams();
+    const ctxMax = (rec.overrides && rec.overrides.context_window_size) || 4096;
+    const chatOpts = { context_window_size: Math.min(Number(p.num_ctx)||ctxMax, ctxMax), prefill_chunk_size: Number(p.prefill_chunk) || 512 };
+    state.engine = await w.CreateMLCEngine(modelId, { appConfig: webAppConfig(w), initProgressCallback: r => dl.update(r.progress || 0, r.text || '') }, chatOpts);
+    state.engineModelId = modelId;
+    state.ui.backend = 'webllm'; state.ui.model.webllm = modelId; saveUi();
+    state.cachedWeb[modelId] = true;
+    dl.done('完成，可離線使用');
+    toast('模型已載入：' + modelId, 'ok');
+    updateEnginePill(); refreshChatModelSel(); renderHw(); renderWebList();
+  }catch(e){
+    console.error(e); dl.fail(friendlyErr(e));
+    toast('載入失敗：' + friendlyErr(e), 'bad');
+  }
+}
+function friendlyErr(e){
+  const m = String(e && e.message || e);
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return '網路連線失敗或被瀏覽器阻擋（CORS）。' + m;
+  if(/QuotaExceeded|quota/i.test(m)) return '網站儲存空間不足，請先刪除其他模型或申請永久儲存。';
+  if(/device.*lost|OutOfMemory|out of memory|Device was lost/i.test(m)) return '顯示記憶體不足，請改用較小的模型或縮短上下文長度。';
+  return m;
+}
+async function refreshWebCache(){
+  try{
+    const w = await loadWebllmModule();
+    const cfg = webAppConfig(w);
+    const ids = new Set([...WEB_CATALOG.map(m=>m.id), ...WEB_CATALOG.map(m=>m.id.replace('q4f16_1','q4f32_1')), ...Object.keys(state.cachedWeb)]);
+    const out = {};
+    for(const id of ids){ if(!w.prebuiltAppConfig.model_list.some(x=>x.model_id===id)) continue; try{ if(await w.hasModelInCache(id, cfg)) out[id] = true; }catch(e){} }
+    state.cachedWeb = out; lsSet('cachedWeb', out);
+  }catch(e){ state.cachedWeb = lsGet('cachedWeb', {}); }
+}
+
+function ollamaBase(){ return (state.ui.ollamaUrl || DEFAULT_UI.ollamaUrl).replace(/\/+$/,''); }
+function oaiBase(){ return (state.ui.oaiUrl || DEFAULT_UI.oaiUrl).replace(/\/+$/,''); }
+async function fetchJson(url, opt, timeout){
+  const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), timeout || 6000);
+  try{ const r = await fetch(url, Object.assign({signal: ctl.signal}, opt||{})); if(!r.ok) throw new Error('HTTP ' + r.status + ' ' + (await r.text().catch(()=>'')).slice(0,200)); return await r.json(); }
+  finally{ clearTimeout(t); }
+}
+function corsHint(){ return location.protocol==='file:' ? '（直接開啟 HTML 檔時，來源為 null，Ollama 需設定 OLLAMA_ORIGINS）' : ''; }
+async function refreshOllama(quiet){
+  const box = $('ollamaStatus');
+  try{
+    const [ver, tags, ps] = await Promise.all([fetchJson(ollamaBase()+'/api/version'), fetchJson(ollamaBase()+'/api/tags'), fetchJson(ollamaBase()+'/api/ps').catch(()=>({models:[]}))]);
+    state.ollamaModels = (tags.models||[]);
+    const running = new Set((ps.models||[]).map(m=>m.name));
+    box.className = 'note ok'; box.innerHTML = `已連線 Ollama ${esc(ver.version||'')} · ${esc(ollamaBase())} · 共 ${state.ollamaModels.length} 個模型`;
+    $('ollamaList').innerHTML = state.ollamaModels.length ? state.ollamaModels.map(m => `<div class="list-item"><div class="row between"><div style="min-width:0"><div class="li-title">${esc(m.name)} ${running.has(m.name)?'<span class="chip ok">已載入記憶體</span>':''}</div><div class="li-sub">${fmtBytes(m.size)} · ${esc((m.details&&m.details.parameter_size)||'')} ${esc((m.details&&m.details.quantization_level)||'')} · 更新 ${esc((m.modified_at||'').slice(0,10))}</div></div><div class="row"><button class="btn sm primary" data-use-ollama="${esc(m.name)}">使用</button><button class="btn sm danger" data-del-ollama="${esc(m.name)}">刪除</button></div></div></div>`).join('') : '<div class="empty">Ollama 裡還沒有模型，可在上方輸入名稱下載，或到「硬體與推薦」挑選。</div>';
+  }catch(e){
+    state.ollamaModels = [];
+    box.className = 'note warn';
+    box.innerHTML = `無法連線到 Ollama（${esc(ollamaBase())}）。請確認已安裝並啟動 Ollama；若已啟動仍失敗，多半是 CORS 限制${esc(corsHint())}，設定方法見「工具與說明」。<br><span class="mini">${esc(e.name==='AbortError'?'連線逾時':e.message)}</span>`;
+    $('ollamaList').innerHTML = '';
+  }
+  refreshChatModelSel();
+}
+async function ollamaPull(name){
+  name = String(name||'').trim(); if(!name) return;
+  const key = 'ollama:' + name; if(state.downloads[key]) return;
+  const dl = addDownload(key, 'Ollama 下載：' + name);
+  const ctl = new AbortController(); dl.onCancel = () => ctl.abort();
+  try{
+    const r = await fetch(ollamaBase() + '/api/pull', {method:'POST', body: JSON.stringify({model:name, stream:true}), signal: ctl.signal});
+    if(!r.ok) throw new Error('HTTP ' + r.status + ' ' + (await r.text()).slice(0,200));
+    const rd = r.body.getReader(); const dec = new TextDecoder(); let buf = ''; const layers = {};
+    while(true){
+      const {value, done} = await rd.read(); if(done) break;
+      buf += dec.decode(value, {stream:true}); let i;
+      while((i = buf.indexOf('\n')) >= 0){
+        const line = buf.slice(0,i).trim(); buf = buf.slice(i+1); if(!line) continue;
+        let j; try{ j = JSON.parse(line); }catch(e){ continue; }
+        if(j.error) throw new Error(j.error);
+        if(j.digest && j.total){ layers[j.digest] = {t:j.total, c:j.completed||0}; }
+        const tot = Object.values(layers).reduce((a,b)=>a+b.t,0), com = Object.values(layers).reduce((a,b)=>a+b.c,0);
+        dl.update(tot ? com/tot : 0, (j.status||'') + (tot ? ` · ${fmtBytes(com)} / ${fmtBytes(tot)}` : ''));
+      }
+    }
+    dl.done('完成'); toast('Ollama 已下載 ' + name, 'ok'); refreshOllama(true);
+  }catch(e){ dl.fail(e.name==='AbortError' ? '已取消（Ollama 會保留已下載部分，下次可續傳）' : friendlyErr(e) + corsHint()); }
+}
+async function refreshOai(){
+  const box = $('oaiStatus');
+  try{
+    const j = await fetchJson(oaiBase() + '/models', {headers: oaiHeaders()});
+    state.oaiModels = (j.data || j.models || []).map(m => m.id || m.name).filter(Boolean);
+    box.className = 'note ok'; box.textContent = `已連線 ${oaiBase()} · ${state.oaiModels.length} 個模型`;
+    $('oaiList').innerHTML = state.oaiModels.map(id => `<div class="list-item row between"><span class="li-title">${esc(id)}</span><button class="btn sm primary" data-use-oai="${esc(id)}">使用</button></div>`).join('') || '<div class="empty">伺服器沒有回報模型（llama-server 會回報啟動時載入的那一個）。</div>';
+  }catch(e){
+    state.oaiModels = [];
+    box.className = 'note warn'; box.innerHTML = `無法連線 ${esc(oaiBase())}。llama.cpp 請先執行 <code>llama-server -hf 模型 --port 8080</code>；LM Studio 請到 Developer 分頁啟動伺服器並開啟 CORS。<br><span class="mini">${esc(e.name==='AbortError'?'連線逾時':e.message)}</span>`;
+    $('oaiList').innerHTML = '';
+  }
+  refreshChatModelSel();
+}
+function oaiHeaders(){ const h = {'Content-Type':'application/json'}; if(state.ui.oaiKey) h.Authorization = 'Bearer ' + state.ui.oaiKey; return h; }
+
+/* ---------- 送出請求 ---------- */
+function buildMessages(chat, p){
+  let sys = (p.system_prompt && p.system_prompt.trim()) || PERSONAS[state.ui.persona] || PERSONAS.assistant;
+  if(state.ui.zhTw) sys += '\n請使用自然的繁體中文（台灣用語）回覆。';
+  const hist = chat.messages.filter(m => !m.system && !m.error).slice(0, -1);
+  const keep = Math.max(1, Number(p.history_turns) * 2 + 1);
+  const sliced = hist.slice(-keep).map(m => ({ role: m.role, content: m.role==='assistant' ? stripThink(m.content) : (m.raw || m.content) }));
+  return [{role:'system', content: sys}, ...sliced];
+}
+const stripThink = t => String(t||'').replace(/^\s*<think>[\s\S]*?<\/think>\s*/, '');
+const stops = p => String(p.stop||'').split(',').map(s=>s.trim()).filter(Boolean).slice(0,4);
+const seedOf = p => (p.seed !== '' && !isNaN(parseInt(p.seed,10))) ? parseInt(p.seed,10) : undefined;
+
+async function* genWebllm(messages, p, signal){
+  if(!state.engine) throw new Error('尚未載入瀏覽器模型，請到「硬體與推薦」或「模型下載」選一個模型');
+  const req = { messages, temperature:+p.temperature, top_p:+p.top_p, frequency_penalty:+p.frequency_penalty, presence_penalty:+p.presence_penalty, repetition_penalty:+p.repeat_penalty, max_tokens:+p.max_tokens, stream: !!p.stream };
+  if(p.stream) req.stream_options = {include_usage:true};
+  const sd = seedOf(p); if(sd!==undefined) req.seed = sd;
+  const st = stops(p); if(st.length) req.stop = st;
+  if(p.json_mode) req.response_format = {type:'json_object'};
+  if(p.think !== 'auto' && /qwen3/i.test(state.engineModelId||'')) req.extra_body = { enable_thinking: p.think === 'on' };
+  const onAbort = () => { try{ state.engine.interruptGenerate(); }catch(e){} };
+  signal.addEventListener('abort', onAbort);
+  try{
+    if(p.stream){
+      const it = await state.engine.chat.completions.create(req);
+      for await (const ch of it){ const d = ch.choices && ch.choices[0] && ch.choices[0].delta && ch.choices[0].delta.content; if(d) yield {text:d}; if(ch.usage) yield {usage: ch.usage}; }
+    }else{
+      const r = await state.engine.chat.completions.create(req);
+      yield {text: (r.choices[0].message.content||'')}; if(r.usage) yield {usage: r.usage};
+    }
+  }finally{ signal.removeEventListener('abort', onAbort); }
+}
+async function* readLines(resp){
+  const rd = resp.body.getReader(); const dec = new TextDecoder(); let buf='';
+  while(true){ const {value, done} = await rd.read(); if(done) break; buf += dec.decode(value,{stream:true}); let i; while((i=buf.indexOf('\n'))>=0){ const l = buf.slice(0,i).trim(); buf = buf.slice(i+1); if(l) yield l; } }
+  if(buf.trim()) yield buf.trim();
+}
+async function* genOllama(messages, p, signal, model){
+  if(!model) throw new Error('請先選擇 Ollama 模型');
+  const options = { temperature:+p.temperature, top_p:+p.top_p, top_k:+p.top_k, min_p:+p.min_p, repeat_penalty:+p.repeat_penalty, repeat_last_n:+p.repeat_last_n, frequency_penalty:+p.frequency_penalty, presence_penalty:+p.presence_penalty, num_predict:+p.max_tokens, num_ctx:+p.num_ctx, num_batch:+p.num_batch, use_mmap: !!p.use_mmap, use_mlock: !!p.use_mlock };
+  if(+p.num_thread > 0) options.num_thread = +p.num_thread;
+  if(+p.num_gpu >= 0) options.num_gpu = +p.num_gpu;
+  const sd = seedOf(p); if(sd!==undefined) options.seed = sd;
+  const st = stops(p); if(st.length) options.stop = st;
+  const body = { model, messages, stream: !!p.stream, options };
+  if(p.keep_alive) body.keep_alive = /^-?\d+$/.test(p.keep_alive) ? Number(p.keep_alive) : p.keep_alive;
+  if(p.json_mode) body.format = 'json';
+  if(p.think !== 'auto') body.think = p.think === 'on';
+  const r = await fetch(ollamaBase() + '/api/chat', {method:'POST', body: JSON.stringify(body), signal});
+  if(!r.ok){ const t = await r.text(); if(/think/i.test(t) && body.think !== undefined){ throw new Error('此模型不支援思考模式設定，請把「思考模式」改為「依模型預設」。' + t.slice(0,160)); } throw new Error('HTTP ' + r.status + ' ' + t.slice(0,200)); }
+  let thinking = false;
+  for await (const line of readLines(r)){
+    let j; try{ j = JSON.parse(line); }catch(e){ continue; }
+    if(j.error) throw new Error(j.error);
+    const m = j.message || {};
+    if(m.thinking){ if(!thinking){ thinking = true; yield {text:'<think>'}; } yield {text:m.thinking}; }
+    if(m.content){ if(thinking){ thinking = false; yield {text:'</think>\n'}; } yield {text:m.content}; }
+    if(j.done){ if(thinking) yield {text:'</think>\n'}; yield {usage:{completion_tokens:j.eval_count, prompt_tokens:j.prompt_eval_count, eval_ms:(j.eval_duration||0)/1e6}}; }
+  }
+}
+async function* genOai(messages, p, signal, model){
+  const body = { model: model || 'local', messages, stream: !!p.stream, temperature:+p.temperature, top_p:+p.top_p, max_tokens:+p.max_tokens, frequency_penalty:+p.frequency_penalty, presence_penalty:+p.presence_penalty,
+    top_k:+p.top_k, min_p:+p.min_p, repeat_penalty:+p.repeat_penalty, repeat_last_n:+p.repeat_last_n }; // 後四項為 llama.cpp 擴充參數，其他伺服器多半會忽略
+  const sd = seedOf(p); if(sd!==undefined) body.seed = sd;
+  const st = stops(p); if(st.length) body.stop = st;
+  if(p.json_mode) body.response_format = {type:'json_object'};
+  if(p.stream) body.stream_options = {include_usage:true};
+  const r = await fetch(oaiBase() + '/chat/completions', {method:'POST', headers: oaiHeaders(), body: JSON.stringify(body), signal});
+  if(!r.ok) throw new Error('HTTP ' + r.status + ' ' + (await r.text()).slice(0,200));
+  if(!p.stream){ const j = await r.json(); const msg = j.choices[0].message; if(msg.reasoning_content) yield {text:'<think>'+msg.reasoning_content+'</think>\n'}; yield {text: msg.content||''}; if(j.usage) yield {usage:j.usage}; return; }
+  let thinking = false;
+  for await (const line of readLines(r)){
+    if(!line.startsWith('data:')) continue; const d = line.slice(5).trim(); if(d==='[DONE]') break;
+    let j; try{ j = JSON.parse(d); }catch(e){ continue; }
+    const delta = j.choices && j.choices[0] && j.choices[0].delta || {};
+    const rc = delta.reasoning_content || delta.reasoning;
+    if(rc){ if(!thinking){ thinking = true; yield {text:'<think>'}; } yield {text: rc}; }
+    if(delta.content){ if(thinking){ thinking=false; yield {text:'</think>\n'}; } yield {text: delta.content}; }
+    if(j.usage) yield {usage:j.usage};
+  }
+  if(thinking) yield {text:'</think>\n'};
+}
+async function* genDemo(messages){
+  const last = messages[messages.length-1].content;
+  const txt = `這是**示範模式**，沒有真正的 AI 在回答。\n\n要開始使用請：\n1. 到「硬體與推薦」看這台裝置適合哪個模型\n2. 手機、平板：選「瀏覽器內建」模型直接下載\n3. 電腦：安裝 Ollama 後在「模型下載」下載模型\n\n你剛剛輸入：\n> ${last.slice(0,160).replace(/\n/g,' ')}`;
+  for(let i=0;i<txt.length;i+=3){ yield {text: txt.slice(i,i+3)}; await new Promise(r=>setTimeout(r,12)); }
+}
+async function runGeneration(messages, onText){
+  const p = activeParams(); const be = state.ui.backend; const model = state.ui.model[be];
+  const ctl = new AbortController(); state.abort = ctl;
+  const gen = be==='webllm' ? genWebllm(messages, p, ctl.signal) : be==='ollama' ? genOllama(messages, p, ctl.signal, model) : be==='openai' ? genOai(messages, p, ctl.signal, model) : genDemo(messages);
+  const t0 = performance.now(); let out = '', chunks = 0, usage = null, tFirst = null;
+  try{
+    for await (const ev of gen){
+      if(ctl.signal.aborted) break;
+      if(ev.text){ if(tFirst===null) tFirst = performance.now(); out += ev.text; chunks++; onText(out, chunks, t0); }
+      if(ev.usage) usage = ev.usage;
+    }
+  }catch(e){ if(e.name !== 'AbortError') throw e; }
+  const sec = Math.max(0.05, (performance.now() - (tFirst||t0)) / 1000);
+  const tok = usage && usage.completion_tokens ? usage.completion_tokens : chunks;
+  const tps = usage && usage.eval_ms ? tok / (usage.eval_ms/1000) : tok / sec;
+  return { text: out, tps, tokens: tok, aborted: ctl.signal.aborted, firstMs: tFirst ? Math.round(tFirst - t0) : null };
+}
+
+/* ======================================================================
+   10. 下載進度面板
+   ====================================================================== */
+function addDownload(key, title){
+  const el = document.createElement('div'); el.className = 'dl-item';
+  el.innerHTML = `<div class="row between"><b style="font-size:12.5px;word-break:break-all;flex:1">${esc(title)}</b><button class="btn sm ghost" data-x>取消</button></div><div class="progress" style="margin:6px 0"><i></i></div><div class="mini" data-t>準備中…</div>`;
+  $('dlDock').appendChild(el);
+  const bar = el.querySelector('i'), txt = el.querySelector('[data-t]'), x = el.querySelector('[data-x]');
+  const h = { onCancel:null,
+    update(f, t){ bar.style.width = Math.round(Math.min(1, Math.max(0, f))*100) + '%'; txt.textContent = (f>0 ? Math.round(f*100)+'% · ' : '') + (t||''); },
+    done(t){ bar.style.width='100%'; bar.style.background='var(--ok)'; txt.textContent = t||'完成'; x.textContent='關閉'; delete state.downloads[key]; x.onclick = () => el.remove(); setTimeout(()=>el.remove(), 8000); },
+    fail(t){ bar.style.background='var(--bad)'; txt.textContent = t||'失敗'; x.textContent='關閉'; delete state.downloads[key]; x.onclick = () => el.remove(); }
+  };
+  x.onclick = () => { if(h.onCancel){ h.onCancel(); } else toast('此項目下載中無法中途取消，可關閉或重新整理頁面', 'warn'); };
+  state.downloads[key] = h; return h;
+}
+
+/* ======================================================================
+   11. Hugging Face 搜尋與 GGUF 下載
+   ====================================================================== */
+const HF = 'https://huggingface.co';
+async function hfSearch(){
+  const q = $('hfQuery').value.trim(); const fmt = $('hfFormat').value; const sort = $('hfSort').value;
+  const box = $('hfResults');
+  if(!navigator.onLine){ box.innerHTML = '<div class="note warn">目前離線，無法搜尋線上模型。</div>'; return; }
+  box.innerHTML = '<div class="empty">搜尋中…</div>';
+  const u = new URL(HF + '/api/models');
+  if(q) u.searchParams.set('search', q);
+  if(fmt==='gguf') u.searchParams.set('filter','gguf');
+  if(fmt==='mlc'){ u.searchParams.set('author','mlc-ai'); }
+  u.searchParams.set('sort', sort); u.searchParams.set('direction','-1'); u.searchParams.set('limit','24');
+  try{
+    const list = await fetchJson(u.toString(), {}, 15000);
+    if(!list.length){ box.innerHTML = `<div class="empty">找不到「${esc(q)}」相關模型，可換個關鍵字或改選「全部」格式。</div>`; return; }
+    box.innerHTML = list.map(m => {
+      const id = m.id || m.modelId; const did = 'hf_' + id.replace(/[^a-z0-9]/gi,'_');
+      return `<div class="list-item"><div class="row between"><div style="min-width:0;flex:1"><div class="li-title">${esc(id)}</div><div class="li-sub">下載 ${(m.downloads||0).toLocaleString()} · 讚 ${(m.likes||0).toLocaleString()}${m.pipeline_tag?' · '+esc(m.pipeline_tag):''}${m.lastModified?' · 更新 '+esc(m.lastModified.slice(0,10)):''}${m.gated?' · <span class="chip warn">需登入同意授權</span>':''}</div></div>
+      <div class="row"><button class="btn sm primary" data-hffiles="${esc(id)}" data-box="${did}">列出檔案</button><a class="btn sm" href="${HF}/${esc(id)}" target="_blank" rel="noopener">網頁</a></div></div><div id="${did}" class="hidden" style="margin-top:8px"></div></div>`;
+    }).join('');
+  }catch(e){ box.innerHTML = `<div class="note bad">無法連線 Hugging Face：${esc(e.name==='AbortError'?'逾時':e.message)}。若在公司或學校網路，可能被防火牆阻擋。</div>`; }
+}
+function quantOf(name){ const m = /(?:^|[-_.])((?:UD-)?I?Q\d(?:_[A-Z0-9]+)*|BF16|F16|F32|MXFP4(?:_MOE)?)(?=[-_.])/i.exec(name); return m ? m[1].toUpperCase() : ''; }
+async function hfFiles(repo, boxId){
+  let box = boxId && $(boxId);
+  if(!box){ // 從推薦卡片呼叫：用對話框顯示
+    const wrapId = 'hfm_' + Date.now();
+    modal({title: repo, html:`<div id="${wrapId}">讀取中…</div>`, okText:'關閉', cancel:false});
+    box = $(wrapId);
+  }
+  box.classList.remove('hidden'); box.innerHTML = '<div class="mini">讀取檔案清單…</div>';
+  try{
+    const files = await fetchJson(`${HF}/api/models/${repo}/tree/main?recursive=true`, {}, 15000);
+    const mlcId = repo.startsWith('mlc-ai/') ? repo.slice(7) : '';
+    let html = '';
+    if(mlcId){
+      let inLib = false; try{ const w = await loadWebllmModule(); inLib = w.prebuiltAppConfig.model_list.some(x=>x.model_id===mlcId); }catch(e){}
+      html += inLib ? `<div class="note ok">這是瀏覽器內建引擎支援的模型。<button class="btn sm primary" data-webload="${esc(mlcId)}" style="margin-left:6px">下載並啟動</button></div>`
+                    : `<div class="note warn">此 MLC 模型不在引擎 ${WEBLLM_VER} 的內建清單，需另外編譯的 WebGPU 程式庫，無法直接載入。</div>`;
+    }
+    const gg = (files||[]).filter(f => f.type==='file' && /\.gguf$/i.test(f.path));
+    if(gg.length){
+      const budget = state.reco.nativeBudget;
+      html += gg.sort((a,b)=>(a.lfs?a.lfs.size:a.size)-(b.lfs?b.lfs.size:b.size)).map(f => {
+        const size = f.lfs ? f.lfs.size : f.size; const gb = size/1073741824; const q = quantOf(f.path.split('/').pop());
+        const split = /-\d{5}-of-\d{5}\.gguf$/i.test(f.path); const mm = /mmproj/i.test(f.path);
+        const fit = mm ? '<span class="chip">視覺投影檔</span>' : gb*1.2 <= budget*0.8 ? '<span class="chip ok">順暢</span>' : gb*1.2 <= budget ? '<span class="chip acc">可執行</span>' : '<span class="chip warn">偏大</span>';
+        const url = `${HF}/${repo}/resolve/main/${f.path.split('/').map(encodeURIComponent).join('/')}`;
+        return `<div class="list-item"><div class="li-title mono" style="font-size:12.5px">${esc(f.path)}</div><div class="li-sub">${fmtBytes(size)} ${q?'· '+esc(q):''} ${fit} ${split?'<span class="chip warn">分割檔，需全部下載</span>':''}</div>
+        <div class="row" style="margin-top:6px"><button class="btn sm primary" data-gguf="${esc(url)}" data-name="${esc(f.path.split('/').pop())}" data-size="${size}">${state.hw.fsa?'下載到資料夾':'下載'}</button>${q&&!mm?`<button class="btn sm" data-pull="${esc('hf.co/'+repo+':'+q)}">Ollama 下載</button>`:''}<button class="btn sm ghost" data-copy="${esc(url)}">複製網址</button></div></div>`;
+      }).join('');
+    }else if(!mlcId){
+      html += `<div class="note">此倉庫沒有 GGUF 檔。可改搜尋「${esc(repo.split('/').pop())} GGUF」找別人轉好的版本。</div>`;
+    }
+    box.innerHTML = html;
+  }catch(e){ box.innerHTML = `<div class="note bad">讀取失敗：${esc(e.message)}（需授權的模型請先在 Hugging Face 網頁同意條款）</div>`; }
+}
+async function getDlDir(ask){
+  let h = await idb.get('dlDir');
+  if(h && h.queryPermission){
+    let perm = await h.queryPermission({mode:'readwrite'});
+    if(perm !== 'granted' && ask) perm = await h.requestPermission({mode:'readwrite'});
+    if(perm === 'granted') return h;
+    if(!ask) return null;
+  }
+  if(!ask) return null;
+  h = await window.showDirectoryPicker({id:'ai-models', mode:'readwrite', startIn:'downloads'});
+  await idb.set('dlDir', h); $('dlDirName').textContent = '目前：' + h.name;
+  return h;
+}
+async function downloadGguf(url, name, size){
+  if(!state.hw.fsa){
+    const a = document.createElement('a'); a.href = url; a.download = name; a.rel='noopener'; document.body.appendChild(a); a.click(); a.remove();
+    toast('已交給瀏覽器下載，檔案會存到預設的「下載」資料夾', 'ok'); return;
+  }
+  let dir; try{ dir = await getDlDir(true); }catch(e){ if(e.name!=='AbortError') toast('無法取得資料夾權限：' + e.message, 'bad'); return; }
+  const key = 'gguf:' + url; if(state.downloads[key]) return;
+  const dl = addDownload(key, name + ' → ' + dir.name);
+  const ctl = new AbortController(); dl.onCancel = () => ctl.abort();
+  let writable;
+  try{
+    const fh = await dir.getFileHandle(name, {create:true});
+    const existing = await fh.getFile(); let start = existing.size;
+    if(size && start >= size){ dl.done('檔案已存在（大小相同），略過'); return; }
+    const headers = start > 0 ? {Range:'bytes=' + start + '-'} : {};
+    const r = await fetch(url, {headers, signal: ctl.signal});
+    if(!r.ok && r.status !== 206) throw new Error('HTTP ' + r.status);
+    if(start > 0 && r.status !== 206) start = 0; // 伺服器不支援續傳
+    writable = await fh.createWritable({keepExistingData: start > 0});
+    if(start > 0) await writable.seek(start);
+    const total = size || (Number(r.headers.get('content-length'))||0) + start;
+    const rd = r.body.getReader(); let got = start; const t0 = performance.now(); let last = 0;
+    while(true){
+      const {value, done} = await rd.read(); if(done) break;
+      await writable.write(value); got += value.length;
+      const now = performance.now(); if(now - last > 300){ last = now; const sp = (got-start)/((now-t0)/1000); dl.update(total?got/total:0, `${fmtBytes(got)} / ${fmtBytes(total)} · ${fmtBytes(sp)}/s${start?' · 續傳':''}`); }
+    }
+    await writable.close(); writable = null;
+    dl.done('已存到「' + dir.name + '」資料夾'); toast('下載完成：' + name, 'ok');
+  }catch(e){
+    if(writable){ try{ await writable.close(); }catch(_){} }
+    dl.fail(e.name==='AbortError' ? '已暫停，再按一次下載會從中斷處續傳' : friendlyErr(e));
+  }
+}
+
+/* ======================================================================
+   12. 瀏覽器模型清單
+   ====================================================================== */
+async function renderWebList(all){
+  const box = $('webllmEngineBox');
+  const engSaved = !!(await idb.get('engine:' + WEBLLM_VER));
+  box.className = state.hw.webgpu ? 'note' : 'note warn';
+  box.innerHTML = state.hw.webgpu ? `推理引擎 WebLLM ${WEBLLM_VER}（${engSaved ? '已存到本機，可離線載入' : '尚未存到本機，第一次使用需連網'}） · 可用預算約 ${(state.reco.webBudget/1024).toFixed(1)} GB` : `此瀏覽器無法使用 WebGPU：${esc(state.hw.gpuErr||'')}`;
+  if(all){
+    try{
+      const w = await loadWebllmModule();
+      const list = w.prebuiltAppConfig.model_list.filter(x => !/embed/i.test(x.model_id));
+      $('webllmList').innerHTML = list.map(x => { const v = x.vram_required_MB||0; const fit = v <= state.reco.webBudget*0.8 ? 'good' : v <= state.reco.webBudget ? 'ok' : 'tight'; const f16 = (x.required_features||[]).includes('shader-f16');
+        return webCard({name:x.model_id, vendor:(f16?'需 f16 · ':'') + (x.low_resource_required?'低資源':''), runVram:v, zh: /qwen/i.test(x.model_id)?4:2, fit, desc:'', runId:x.model_id}); }).join('');
+    }catch(e){ $('webllmList').innerHTML = `<div class="note bad">無法載入完整清單：${esc(friendlyErr(e))}</div>`; }
+    return;
+  }
+  $('webllmList').innerHTML = state.reco.webSorted.concat(state.reco.web.filter(m=>!m.usable)).map(m => m.usable ? webCard(m) : `<div class="list-item"><div class="li-title">${esc(m.name)}</div><div class="li-sub">${state.hw.webgpu ? '只有 f16 版本，此裝置不支援 shader-f16' : '需要 WebGPU'}</div></div>`).join('');
+}
+
+/* ======================================================================
+   13. 模型存放路徑、開啟資料夾小幫手
+   ====================================================================== */
+const PATHS = {
+  windows:[
+    {k:'ollama', n:'Ollama 模型', p:'%USERPROFILE%\\.ollama\\models', env:'OLLAMA_MODELS', sure:true},
+    {k:'lms', n:'LM Studio 模型', p:'%USERPROFILE%\\.lmstudio\\models', sure:false, note:'舊版可能在 %USERPROFILE%\\.cache\\lm-studio\\models；可在 LM Studio「My Models」查看實際位置'},
+    {k:'llamacpp', n:'llama.cpp（-hf 下載快取）', p:'%LOCALAPPDATA%\\llama.cpp', env:'LLAMA_CACHE', sure:false},
+    {k:'hf', n:'Hugging Face 快取', p:'%USERPROFILE%\\.cache\\huggingface\\hub', env:'HF_HUB_CACHE', sure:true},
+    {k:'dl', n:'瀏覽器「下載」資料夾', p:'%USERPROFILE%\\Downloads', sure:true}
+  ],
+  mac:[
+    {k:'ollama', n:'Ollama 模型', p:'~/.ollama/models', env:'OLLAMA_MODELS', sure:true},
+    {k:'lms', n:'LM Studio 模型', p:'~/.lmstudio/models', sure:false, note:'舊版可能在 ~/.cache/lm-studio/models'},
+    {k:'llamacpp', n:'llama.cpp（-hf 下載快取）', p:'~/Library/Caches/llama.cpp', env:'LLAMA_CACHE', sure:false},
+    {k:'hf', n:'Hugging Face 快取', p:'~/.cache/huggingface/hub', env:'HF_HUB_CACHE', sure:true},
+    {k:'dl', n:'瀏覽器「下載」資料夾', p:'~/Downloads', sure:true}
+  ],
+  linux:[
+    {k:'ollama', n:'Ollama 模型（系統服務安裝）', p:'/usr/share/ollama/.ollama/models', env:'OLLAMA_MODELS', sure:true, note:'若是用自己的帳號執行 ollama serve，則在 ~/.ollama/models'},
+    {k:'ollama2', n:'Ollama 模型（使用者執行）', p:'~/.ollama/models', env:'OLLAMA_MODELS', sure:true},
+    {k:'lms', n:'LM Studio 模型', p:'~/.lmstudio/models', sure:false},
+    {k:'llamacpp', n:'llama.cpp（-hf 下載快取）', p:'~/.cache/llama.cpp', env:'LLAMA_CACHE', sure:false},
+    {k:'hf', n:'Hugging Face 快取', p:'~/.cache/huggingface/hub', env:'HF_HUB_CACHE', sure:true},
+    {k:'dl', n:'瀏覽器「下載」資料夾', p:'~/Downloads', sure:true}
+  ],
+  android:[
+    {k:'dl', n:'瀏覽器下載的 GGUF', p:'/storage/emulated/0/Download', sure:true, note:'用「檔案」或「我的檔案」App 開啟「下載」即可複製到 SD 卡或電腦'},
+    {k:'termux', n:'Termux 裡的 Ollama', p:'/data/data/com.termux/files/home/.ollama/models', sure:false, note:'屬於 Termux 私有空間，請在 Termux 執行 termux-setup-storage 後用下方腳本複製到「下載」'},
+    {k:'app', n:'PocketPal、Google AI Edge Gallery 等 App', p:'（App 私有空間，無法從外部開啟）', sure:false, note:'請用 App 內的匯出或分享功能；是否提供依 App 版本而定'}
+  ],
+  ios:[
+    {k:'dl', n:'Safari 下載的檔案', p:'檔案 App › 我的 iPhone（或 iCloud 雲碟）› 下載項目', sure:true, note:'可在檔案 App 長按 › 拷貝，貼到外接隨身碟或 iCloud'},
+    {k:'app', n:'PocketPal 等 App 下載的模型', p:'（App 沙盒內）', sure:false, note:'只有開放「檔案共享」的 App，才會出現在檔案 App 的「我的 iPhone」底下'},
+    {k:'web', n:'瀏覽器內建模型', p:'（Safari 網站資料，無法用檔案 App 看到）', sure:true, note:'請用下方「瀏覽器模型備份」匯出'}
+  ]
+};
+function customPaths(){ return lsGet('customPaths', {}); }
+function renderPaths(){
+  const os = state.ui.os || 'windows';
+  document.querySelectorAll('#osSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.os===os?'true':'false'));
+  const cp = customPaths();
+  const scriptOk = ['windows','mac','linux','android'].includes(os);
+  $('pathList').innerHTML = PATHS[os].map(e => {
+    const p = cp[os+':'+e.k] || e.p; const literal = !/^（|^檔案 App/.test(p);
+    return `<div class="list-item"><div class="row between"><b>${esc(e.n)}</b>${e.sure?'':'<span class="chip warn">路徑可能因版本而異</span>'}</div>
+    <div class="row" style="margin-top:6px"><span class="path">${esc(p)}</span>${literal?`<button class="btn sm" data-copy="${esc(p)}">複製路徑</button>`:''}</div>
+    ${e.env?`<div class="mini" style="margin-top:4px">若有設定環境變數 <code>${e.env}</code>，會改用該變數指定的位置。</div>`:''}${e.note?`<div class="mini" style="margin-top:4px">${esc(e.note)}</div>`:''}
+    ${literal?`<div class="row" style="margin-top:8px">${scriptOk?`<button class="btn sm primary" data-script="open" data-pk="${e.k}">下載「開啟資料夾」小幫手</button><button class="btn sm" data-script="backup" data-pk="${e.k}">下載「備份」小幫手</button>`:''}<button class="btn sm ghost" data-editpath="${e.k}">自訂路徑</button>${location.protocol==='file:' && os===state.hw.os && !/[%~]/.test(p) ? `<a class="btn sm ghost" href="file:///${esc(p.replace(/\\/g,'/').replace(/^\//,''))}" target="_blank">嘗試直接開啟</a>`:''}</div>`:''}</div>`;
+  }).join('') + `<div class="mini" style="margin-top:10px">小幫手是一個很短的文字腳本，下載後可先用記事本打開檢查內容再執行。${os==='mac'?'macOS 第一次執行需在「終端機」輸入 <code>bash 檔名.command</code>，或先 <code>chmod +x</code>。':os==='android'?'Android 腳本需在 Termux 中用 <code>bash 檔名.sh</code> 執行。':os==='linux'?'Linux 請用 <code>bash 檔名.sh</code> 執行。':'Windows 若跳出 SmartScreen 警告，按「其他資訊 › 仍要執行」。'}</div>`;
+}
+function buildScript(os, entry, mode, target){
+  const p = customPaths()[os+':'+entry.k] || entry.p;
+  if(os==='windows'){
+    let s = '@echo off\r\nchcp 65001 >nul\r\nrem 萬用離線 AI 工作台產生的小幫手：' + entry.n + '\r\n';
+    s += `set "P=${p}"\r\n`;
+    if(entry.env) s += `if defined ${entry.env} set "P=%${entry.env}%"\r\n`;
+    s += 'if not exist "%P%" (\r\n  echo 找不到資料夾：%P%\r\n  pause\r\n  exit /b 1\r\n)\r\n';
+    if(mode==='open') s += 'start "" explorer "%P%"\r\n';
+    else s += `set "T=${target}"\r\necho 正在把 "%P%" 備份到 "%T%" ...\r\nrobocopy "%P%" "%T%" /E /R:2 /W:2 /NP\r\necho.\r\necho 完成（robocopy 結束代碼 0~7 都代表成功）\r\npause\r\n`;
+    return {name: (mode==='open'?'開啟_':'備份_') + entry.k + '.bat', text: s};
+  }
+  const home = q => q.replace(/^~(?=\/|$)/, '$HOME');
+  let s = '#!/bin/bash\n# 萬用離線 AI 工作台產生的小幫手：' + entry.n + '\n';
+  s += `P="${home(p)}"\n`;
+  if(entry.env) s += `[ -n "$${entry.env}" ] && P="$${entry.env}"\n`;
+  s += 'if [ ! -d "$P" ]; then echo "找不到資料夾：$P"; exit 1; fi\n';
+  if(mode==='open'){
+    s += os==='mac' ? 'open "$P"\n' : os==='android' ? 'echo "模型資料夾：$P"; ls -lh "$P"\n' : '(xdg-open "$P" || gio open "$P") >/dev/null 2>&1 &\n';
+  }else{
+    s += `T="${home(target)}"\nmkdir -p "$T"\necho "正在把 $P 備份到 $T ..."\n`;
+    s += 'if command -v rsync >/dev/null; then rsync -ah --progress "$P/" "$T/"; else cp -Rv "$P/." "$T/"; fi\necho "完成"\n';
+  }
+  return {name: (mode==='open'?'開啟_':'備份_') + entry.k + (os==='mac'?'.command':'.sh'), text: s};
+}
+async function scriptClick(mode, k){
+  const os = state.ui.os; const entry = PATHS[os].find(e=>e.k===k); if(!entry) return;
+  let target = '';
+  if(mode==='backup'){
+    const def = os==='windows' ? 'D:\\AI模型備份\\' + k : os==='android' ? '~/storage/shared/Download/AI模型備份/' + k : '~/AI模型備份/' + k;
+    target = await modal({title:'備份到哪裡？', message:'請輸入目的地資料夾（可以是隨身碟、外接硬碟或 NAS 路徑）：', input: lsGet('backupTarget:'+os, def), okText:'產生腳本'});
+    if(!target) return; lsSet('backupTarget:'+os, target);
+  }
+  const sc = buildScript(os, entry, mode, target);
+  downloadText(sc.name, sc.text, 'application/octet-stream');
+  toast('已下載 ' + sc.name + '，雙擊或用終端機執行', 'ok');
+}
+
+/* ---------- 資料夾瀏覽與備份（File System Access） ---------- */
+async function walkDir(dir, prefix, out, limit){
+  for await (const [name, h] of dir.entries()){
+    if(out.length >= limit) break;
+    const path = prefix ? prefix + '/' + name : name;
+    if(h.kind === 'file'){ const f = await h.getFile(); out.push({path, size:f.size, mod:f.lastModified, h}); }
+    else await walkDir(h, path, out, limit);
+  }
+  return out;
+}
+async function listDlDir(){
+  if(!state.hw.fsa){ toast('此瀏覽器不支援資料夾存取', 'warn'); return; }
+  let dir; try{ dir = await getDlDir(true); }catch(e){ return; }
+  $('dlDirName').textContent = '目前：' + dir.name;
+  const box = $('dlDirFiles'); box.innerHTML = '<div class="mini">讀取中…</div>';
+  const files = await walkDir(dir, '', [], 2000);
+  const total = files.reduce((a,b)=>a+b.size,0);
+  box.innerHTML = files.length ? `<div class="mini" style="margin-bottom:6px">共 ${files.length} 個檔案 · ${fmtBytes(total)}</div>` + files.sort((a,b)=>b.size-a.size).slice(0,200).map(f => `<div class="list-item row between"><div style="min-width:0"><div class="li-title mono" style="font-size:12.5px">${esc(f.path)}</div><div class="li-sub">${fmtBytes(f.size)} · ${new Date(f.mod).toLocaleString('zh-TW')}</div></div>${/\.gguf$/i.test(f.path)?`<button class="btn sm ghost" data-copy="${esc('llama-server -m "' + f.path + '"')}">複製執行指令</button>`:''}</div>`).join('') : '<div class="empty">資料夾是空的</div>';
+}
+async function backupDir(){
+  if(!state.hw.fsa){ toast('此瀏覽器不支援資料夾存取，請改用「儲存位置」的備份小幫手', 'warn'); return; }
+  try{
+    const choose = await modal({title:'備份哪個資料夾？', message:'「下載資料夾」= 本工具下載 GGUF 的位置。\n「另選資料夾」可選 Ollama、LM Studio 等任何模型資料夾（隱藏資料夾在 Windows 可直接貼路徑，macOS 按 ⌘⇧. 顯示）。', okText:'下載資料夾', cancelText:'另選資料夾'});
+    const src = choose ? await getDlDir(true) : await window.showDirectoryPicker({id:'ai-src', mode:'read'});
+    toast('接著選擇「目的地」資料夾（例如隨身碟）');
+    const dst = await window.showDirectoryPicker({id:'ai-backup', mode:'readwrite'});
+    const files = await walkDir(src, '', [], 100000);
+    const total = files.reduce((a,b)=>a+b.size,0);
+    const dl = addDownload('backup:' + Date.now(), `備份 ${src.name} → ${dst.name}`);
+    let cancel = false; dl.onCancel = () => { cancel = true; };
+    let done = 0, skipped = 0, copied = 0;
+    for(const f of files){
+      if(cancel) throw new DOMException('cancel','AbortError');
+      let d = dst; const parts = f.path.split('/'); const fname = parts.pop();
+      for(const part of parts) d = await d.getDirectoryHandle(part, {create:true});
+      let exist = null; try{ exist = await (await d.getFileHandle(fname)).getFile(); }catch(e){}
+      if(exist && exist.size === f.size){ skipped++; done += f.size; dl.update(total?done/total:1, `略過相同檔案 ${skipped} 個`); continue; }
+      const fh = await d.getFileHandle(fname, {create:true}); const w = await fh.createWritable();
+      const file = await f.h.getFile(); const rd = file.stream().getReader();
+      while(true){ const {value, done:dn} = await rd.read(); if(dn) break; if(cancel){ await w.abort(); throw new DOMException('cancel','AbortError'); } await w.write(value); done += value.length; dl.update(total?done/total:1, `${fmtBytes(done)} / ${fmtBytes(total)} · ${fname}`); }
+      await w.close(); copied++;
+    }
+    dl.done(`完成：複製 ${copied} 個、略過 ${skipped} 個（共 ${fmtBytes(total)}）`);
+  }catch(e){ if(e.name !== 'AbortError') toast('備份失敗：' + e.message, 'bad'); else toast('已取消'); }
+}
+
+/* ---------- 瀏覽器模型（Cache API）匯出 / 匯入 ---------- */
+const WEB_CACHES = ['webllm/model','webllm/config','webllm/wasm'];
+async function renderCacheModels(){
+  const box = $('cacheModels'); const h = state.hw;
+  $('persistState').textContent = h.persisted ? '已啟用永久儲存' : (navigator.storage && navigator.storage.persist ? '尚未啟用' : '此瀏覽器不支援');
+  if(!('caches' in window)){ box.innerHTML = '<div class="note warn">此環境無法使用 Cache API（可能不是 https 開啟）。</div>'; return; }
+  box.innerHTML = '<div class="mini">檢查中…</div>';
+  try{
+    const c = await caches.open('webllm/model'); const keys = await c.keys();
+    const groups = {};
+    keys.forEach(r => { const m = /huggingface\.co\/([^/]+\/[^/]+)\/resolve/.exec(r.url); const k = m ? m[1] : '其他'; (groups[k] = groups[k] || []).push(r.url); });
+    const ent = Object.entries(groups);
+    box.innerHTML = ent.length ? ent.map(([repo, urls]) => { const id = repo.split('/').pop(); return `<div class="list-item row between"><div style="min-width:0"><div class="li-title">${esc(id)}</div><div class="li-sub">${urls.length} 個分片</div></div><div class="row"><button class="btn sm primary" data-exportcache="${esc(id)}" data-repo="${esc(repo)}">匯出到資料夾</button><button class="btn sm danger" data-delcache="${esc(id)}">刪除</button></div></div>`; }).join('') : '<div class="empty">這個瀏覽器目前沒有已下載的瀏覽器模型（或使用了 IndexedDB／OPFS 儲存方式）。</div>';
+  }catch(e){ box.innerHTML = `<div class="note bad">${esc(e.message)}</div>`; }
+}
+async function exportCacheModel(id, repo){
+  if(!state.hw.fsa){ toast('此瀏覽器不支援寫入資料夾，無法匯出（Chrome / Edge 電腦版與新版 Android Chrome 才支援）', 'warn'); return; }
+  let dst; try{ dst = await window.showDirectoryPicker({id:'ai-backup', mode:'readwrite'}); }catch(e){ return; }
+  const dl = addDownload('exp:' + id, '匯出 ' + id + ' → ' + dst.name);
+  try{
+    const folder = await dst.getDirectoryHandle(id, {create:true});
+    const manifest = { app: APP_ID, kind:'webllm-cache', engine: WEBLLM_VER, modelId:id, exportedAt:new Date().toISOString(), entries:[] };
+    const items = [];
+    for(const cn of WEB_CACHES){ const c = await caches.open(cn); for(const r of await c.keys()){ if(r.url.includes('/' + repo + '/') || (cn==='webllm/wasm' && r.url.includes(id.replace(/-MLC.*$/,'')))) items.push([cn, c, r]); } }
+    let i = 0;
+    for(const [cn, c, req] of items){
+      const res = await c.match(req); if(!res) continue;
+      const fname = String(++i).padStart(4,'0') + '_' + decodeURIComponent(req.url.split('/').pop().split('?')[0]).replace(/[\\/:*?"<>|]/g,'_');
+      const fh = await folder.getFileHandle(fname, {create:true}); const w = await fh.createWritable();
+      await res.body.pipeTo(w);
+      manifest.entries.push({cache:cn, url:req.url, file:fname, type: res.headers.get('content-type') || ''});
+      dl.update(i/items.length, fname);
+    }
+    const mf = await folder.getFileHandle('manifest.json', {create:true}); const mw = await mf.createWritable(); await mw.write(JSON.stringify(manifest, null, 2)); await mw.close();
+    dl.done(`已匯出 ${i} 個檔案到「${dst.name}/${id}」`);
+  }catch(e){ dl.fail(e.message); }
+}
+async function importCacheModel(){
+  if(!state.hw.fsa){ toast('此瀏覽器不支援讀取資料夾', 'warn'); return; }
+  let dir; try{ dir = await window.showDirectoryPicker({id:'ai-backup', mode:'read'}); }catch(e){ return; }
+  const dirs = [];
+  try{ await dir.getFileHandle('manifest.json'); dirs.push(dir); }catch(e){ for await (const [n,h] of dir.entries()){ if(h.kind==='directory'){ try{ await h.getFileHandle('manifest.json'); dirs.push(h); }catch(_){} } } }
+  if(!dirs.length){ toast('找不到 manifest.json，請選擇匯出的模型資料夾', 'bad'); return; }
+  for(const d of dirs){
+    const mf = JSON.parse(await (await (await d.getFileHandle('manifest.json')).getFile()).text());
+    const dl = addDownload('imp:' + mf.modelId, '匯入 ' + mf.modelId);
+    try{
+      let i = 0;
+      for(const e of mf.entries){ const f = await (await d.getFileHandle(e.file)).getFile(); const c = await caches.open(e.cache); await c.put(e.url, new Response(f, {headers: e.type ? {'Content-Type': e.type} : {}})); dl.update(++i/mf.entries.length, e.file); }
+      state.cachedWeb[mf.modelId] = true; lsSet('cachedWeb', state.cachedWeb);
+      dl.done('匯入完成，可離線啟動 ' + mf.modelId);
+    }catch(e){ dl.fail(e.message); }
+  }
+  renderCacheModels(); renderHw();
+}
+async function deleteCacheModel(id){
+  if(!await modal({title:'刪除 ' + id + '？', message:'會從此瀏覽器刪除這個模型，之後需重新下載。', danger:true, okText:'刪除'})) return;
+  try{ const w = await loadWebllmModule(); await w.deleteModelAllInfoInCache(id, webAppConfig(w)); }
+  catch(e){ for(const cn of WEB_CACHES){ const c = await caches.open(cn); for(const r of await c.keys()) if(r.url.includes('/' + id + '/')) await c.delete(r); } }
+  delete state.cachedWeb[id]; lsSet('cachedWeb', state.cachedWeb);
+  if(state.engineModelId === id){ try{ await state.engine.unload(); }catch(e){} state.engine = null; state.engineModelId = null; updateEnginePill(); }
+  toast('已刪除', 'ok'); renderCacheModels(); renderHw();
+}
+async function renderEngineState(){ const s = await idb.get('engine:' + WEBLLM_VER); $('engineState').textContent = s ? `已存 WebLLM ${WEBLLM_VER}（${fmtBytes(s.length)}）` : '尚未存到本機'; }
+
+/* ======================================================================
+   14. 對話畫面
+   ====================================================================== */
+function nowTime(){ return new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'}); }
+function newChat(){
+  const c = { id:'c_' + Date.now().toString(36), title:'新對話', updated: Date.now(), messages:[] };
+  state.chats.unshift(c); state.activeChatId = c.id; saveChats(); return c;
+}
+function activeChat(){ return state.chats.find(c => c.id === state.activeChatId) || state.chats[0] || newChat(); }
+function renderMsgs(){
+  const c = activeChat(); state.activeChatId = c.id;
+  const box = $('msgs');
+  if(!c.messages.length){
+    box.innerHTML = `<div class="card" style="text-align:center"><h2 style="justify-content:center">開始離線對話</h2><p class="desc" style="margin:6px 0 12px">${esc(engineSummary())}</p><div class="row" style="justify-content:center">${['用三點說明什麼是量化（Quantization）','把這句翻成英文：明天下午三點開會','幫我寫一個 Python 讀取 CSV 的範例','整理今天的待辦清單格式'].map(q=>`<button class="btn sm" data-quick="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>`;
+    return;
+  }
+  box.innerHTML = c.messages.map((m, i) => m.role==='user'
+    ? `<div class="msg user"><div class="bubble">${esc(m.content)}</div><div class="meta">${esc(m.time||'')}<button data-copymsg="${i}">複製</button><button data-editmsg="${i}">編輯重送</button></div></div>`
+    : `<div class="msg bot"><div class="bubble ${m.error?'note bad':''}">${m.content ? renderAnswer(m.content) : '<span class="mini">思考中…</span>'}</div><div class="meta">${esc(m.time||'')} ${m.meta?'· '+esc(m.meta):''}<button data-copymsg="${i}">複製</button>${i===c.messages.length-1?`<button data-regen="${i}">重新產生</button>`:''}<button data-speak="${i}">朗讀</button></div></div>`
+  ).join('');
+}
+function renderHistory(){
+  $('historyList').innerHTML = state.chats.map(c => `<div class="hist-item ${c.id===state.activeChatId?'active':''}" data-openchat="${c.id}"><div style="min-width:0"><div style="font-weight:650;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.title)}</div><div class="mini">${new Date(c.updated).toLocaleString('zh-TW')} · ${c.messages.length} 則</div></div><button class="btn sm ghost" data-delchat="${c.id}">刪除</button></div>`).join('') || '<div class="empty">沒有歷史對話</div>';
+}
+function engineSummary(){
+  const be = state.ui.backend, m = state.ui.model[be];
+  if(be==='demo') return '目前是示範模式，請先選擇 AI 引擎與模型。';
+  if(be==='webllm') return state.engineModelId ? '瀏覽器模型 ' + state.engineModelId + ' 已就緒，可完全離線使用。' : '尚未載入瀏覽器模型，請在上方選擇模型或到「硬體與推薦」挑選。';
+  return (be==='ollama'?'Ollama':'相容 API') + (m ? ' · ' + m : ' · 尚未選擇模型');
+}
+function updateEnginePill(){
+  const be = state.ui.backend; let ok = false, txt = '';
+  if(be==='webllm'){ ok = !!state.engineModelId; txt = ok ? '瀏覽器 · ' + state.engineModelId.replace(/-q4f(16|32)_1-MLC/,'') : '瀏覽器 · 未載入'; }
+  else if(be==='ollama'){ ok = !!state.ui.model.ollama && state.ollamaModels.length>0; txt = 'Ollama · ' + (state.ui.model.ollama || '未選模型'); }
+  else if(be==='openai'){ ok = !!state.oaiModels.length || !!state.ui.model.openai; txt = '相容 API · ' + (state.ui.model.openai || '未選模型'); }
+  else txt = '示範模式';
+  $('engDot').className = 'dot ' + (ok ? 'ok' : be==='demo' ? '' : 'warn'); $('engText').textContent = txt;
+  const hint = $('chatHint');
+  if(be==='webllm' && !state.engineModelId){ hint.classList.remove('hidden'); hint.innerHTML = state.hw.webgpu ? `尚未載入模型。推薦這台裝置使用 <b>${esc((state.reco.webSorted[0]||{}).name||'')}</b>。<button class="btn sm primary" data-webload="${esc((state.reco.webSorted[0]||{}).runId||'')}" style="margin-left:6px">${state.cachedWeb[(state.reco.webSorted[0]||{}).runId]?'離線啟動':'下載並啟動'}</button>` : '此瀏覽器不能用 WebGPU，請改選 Ollama／相容 API，或用「示範模式」先熟悉介面。'; }
+  else hint.classList.add('hidden');
+}
+function refreshChatModelSel(){
+  const be = state.ui.backend; const sel = $('chatModelSel'); let opts = [];
+  if(be==='webllm'){ opts = state.reco.webSorted.map(m => [m.runId, m.name + (state.cachedWeb[m.runId]?'（已下載）':'') + (m.fit==='tight'?'（偏大）':'')]); if(state.engineModelId && !opts.some(o=>o[0]===state.engineModelId)) opts.unshift([state.engineModelId, state.engineModelId]); }
+  else if(be==='ollama') opts = state.ollamaModels.map(m => [m.name, m.name]);
+  else if(be==='openai') opts = state.oaiModels.map(id => [id, id]);
+  const cur = state.ui.model[be];
+  if(cur && !opts.some(o=>o[0]===cur)) opts.unshift([cur, cur]);
+  sel.innerHTML = (be==='demo' ? '<option value="">（不需模型）</option>' : '<option value="">選擇模型…</option>') + opts.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('');
+  sel.value = be==='webllm' ? (state.engineModelId || cur || '') : (cur || '');
+  $('backendSel').value = be;
+  updateEnginePill();
+}
+async function sendMessage(text, opts){
+  opts = opts || {};
+  if(state.generating) return;
+  let content = (text != null ? text : $('chatInput').value).trim();
+  if(!content && !state.attach && !opts.regen) return;
+  let raw = content;
+  if(state.attach){ raw = (content || '請閱讀並摘要以下檔案內容') + `\n\n【附件：${state.attach.name}】\n\`\`\`\n${state.attach.text.slice(0, 24000)}\n\`\`\``; content = (content ? content + '\n' : '') + '📎 ' + state.attach.name; clearAttach(); }
+  if(text == null){ $('chatInput').value = ''; autoGrow(); }
+  const c = activeChat();
+  if(!opts.regen){ c.messages.push({role:'user', content, raw: raw!==content ? raw : undefined, time: nowTime()}); if(c.title==='新對話') c.title = content.slice(0, 24); }
+  const ai = {role:'assistant', content:'', time: nowTime()}; c.messages.push(ai); c.updated = Date.now();
+  renderMsgs(); scrollBottom(true);
+  state.generating = true; $('btnSend').classList.add('hidden'); $('btnStop').classList.remove('hidden');
+  try{
+    if(state.ui.backend==='webllm' && !state.engine && state.ui.model.webllm){ ai.content = ''; await loadWebModel(state.ui.model.webllm); }
+    const p = activeParams();
+    const messages = buildMessages(c, p);
+    let lastPaint = 0;
+    const res = await runGeneration(messages, (out, n, t0) => {
+      ai.content = out; const now = performance.now();
+      if(now - lastPaint > 50){ lastPaint = now; const bub = $('msgs').lastElementChild && $('msgs').lastElementChild.querySelector('.bubble'); if(bub) bub.innerHTML = renderAnswer(out); $('tpsHud').textContent = (n / Math.max(0.1,(now - t0)/1000)).toFixed(1) + ' tok/s'; scrollBottom(); }
+    });
+    ai.content = res.text || (res.aborted ? '（已停止）' : '（沒有產生內容）');
+    ai.meta = `${state.ui.backend==='demo'?'示範':(state.ui.model[state.ui.backend]||state.engineModelId||'')} · ${res.tps.toFixed(1)} tok/s${res.firstMs!=null?' · 首字 '+(res.firstMs/1000).toFixed(1)+' 秒':''}${res.aborted?' · 已停止':''}`;
+    $('tpsHud').textContent = res.tps.toFixed(1) + ' tok/s';
+    if(state.ui.tts && !res.aborted) speak(stripThink(ai.content));
+  }catch(e){
+    console.error(e); ai.error = true; ai.content = '⚠️ ' + friendlyErr(e); ai.meta = '錯誤';
+  }finally{
+    state.generating = false; state.abort = null; $('btnSend').classList.remove('hidden'); $('btnStop').classList.add('hidden');
+    saveChats(); renderMsgs(); scrollBottom();
+  }
+}
+function scrollBottom(force){ const nearBottom = (window.innerHeight + window.scrollY) >= document.body.scrollHeight - 220; if(force || nearBottom) window.scrollTo({top: document.body.scrollHeight}); }
+function autoGrow(){ const t = $('chatInput'); t.style.height = 'auto'; t.style.height = Math.min(200, t.scrollHeight) + 'px'; }
+function clearAttach(){ state.attach = null; $('attachBar').classList.add('hidden'); $('attachInput').value = ''; }
+function speak(text){ if(!('speechSynthesis' in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(String(text).replace(/[#*`>|]/g,'').slice(0, 3000)); u.lang = 'zh-TW'; speechSynthesis.speak(u); }
+let recog = null;
+function toggleMic(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ toast('此瀏覽器不支援語音輸入（Chrome、Edge、Safari 較完整；部分瀏覽器的語音辨識需連網）', 'warn'); return; }
+  if(recog){ recog.stop(); return; }
+  recog = new SR(); recog.lang = 'zh-TW'; recog.interimResults = true; recog.continuous = false;
+  const base = $('chatInput').value;
+  recog.onresult = e => { let t=''; for(const r of e.results) t += r[0].transcript; $('chatInput').value = base + t; autoGrow(); };
+  recog.onend = () => { recog = null; $('btnMic').classList.remove('on'); };
+  recog.onerror = e => toast('語音輸入錯誤：' + e.error, 'warn');
+  recog.start(); $('btnMic').classList.add('on');
+}
+function exportChat(){
+  const c = activeChat();
+  const mdText = `# ${c.title}\n\n` + c.messages.map(m => `**${m.role==='user'?'我':'AI'}**（${m.time||''}）\n\n${m.role==='assistant'?stripThink(m.content):m.content}\n`).join('\n---\n\n');
+  downloadText('對話_' + stamp() + '.md', mdText, 'text/markdown;charset=utf-8');
+}
+
+/* ======================================================================
+   15. 快速工具
+   ====================================================================== */
+function maskPII(t){
+  let n = 0; const rep = (re, s) => { t = t.replace(re, () => { n++; return s; }); };
+  rep(/[A-Z][12]\d{8}/g, '[身分證]');
+  rep(/(?:\+?886[-\s]?|0)9\d{2}[-\s]?\d{3}[-\s]?\d{3}/g, '[手機]');
+  rep(/\(?0\d{1,2}\)?[-\s]?\d{3,4}[-\s]?\d{4}/g, '[電話]');
+  rep(/[\w.+-]+@[\w-]+\.[\w.-]+/g, '[Email]');
+  rep(/\b(?:\d[ -]?){13,19}\b/g, '[卡號]');
+  rep(/\b\d{8}\b/g, '[統編]');
+  rep(/(?:\d{1,3}\.){3}\d{1,3}/g, '[IP]');
+  return {t, n};
+}
+async function runTool(kind){
+  const inp = $('toolInput').value.trim(); if(!inp){ toast('請先輸入文字', 'warn'); return; }
+  if(kind==='mask'){ const r = maskPII(inp); $('toolOutput').value = r.t; $('toolInfo').textContent = `已遮罩 ${r.n} 處（本機處理，未使用 AI）`; return; }
+  if(state.generating){ toast('AI 正在回覆中，請稍候', 'warn'); return; }
+  const prompts = { translate: `請把以下內容翻譯成${$('toolLang').value}，只輸出翻譯結果：\n\n${inp}`, summary: `請用繁體中文整理以下內容：先列 3–5 點重點摘要，再列出待辦事項（含負責人或期限，若原文沒有就寫「未提及」）。\n\n${inp}`, rewrite: `請把以下文字潤飾成專業、禮貌、清楚的商務語氣，保留原意：\n\n${inp}` };
+  $('toolOutput').value = ''; $('toolInfo').textContent = '處理中…'; state.generating = true;
+  try{
+    const p = activeParams();
+    const msgs = [{role:'system', content: PERSONAS.assistant + (state.ui.zhTw && kind!=='translate' ? '\n請使用繁體中文（台灣用語）。' : '')}, {role:'user', content: prompts[kind]}];
+    const res = await runGeneration(msgs, out => { $('toolOutput').value = stripThink(out); });
+    $('toolOutput').value = stripThink(res.text); $('toolInfo').textContent = `${res.tps.toFixed(1)} tok/s`;
+  }catch(e){ $('toolInfo').textContent = '失敗：' + friendlyErr(e); }
+  finally{ state.generating = false; state.abort = null; }
+}
+
+/* ======================================================================
+   16. 平台說明表
+   ====================================================================== */
+function renderPlatformTable(){
+  const rows = [
+    ['Windows / macOS / Linux 電腦', 'Chrome、Edge 支援 WebGPU；macOS 26 的 Safari 支援；Firefox 在 Windows 已支援、其他系統不確定。Linux 部分顯卡需手動開啟（不確定）', '最完整：Ollama、llama.cpp、LM Studio 都可用，速度最快', 'Chrome / Edge 可直接存到指定資料夾並續傳；Safari、Firefox 存到下載資料夾', '複製路徑，或下載「開啟資料夾」小幫手雙擊執行'],
+    ['Android 手機、平板', 'Chrome 121 起支援（Android 12 以上、Qualcomm / ARM 顯示晶片）；實際能否使用依機型而定', '進階：Termux 安裝 Ollama 或 llama.cpp；一般：PocketPal、Google AI Edge Gallery 等 App', 'Chrome 132 起支援選擇資料夾（經由系統檔案選擇器，偶有相容問題）', '複製路徑，用「檔案」App 前往「下載」；Termux 可用小幫手腳本'],
+    ['iPhone、iPad', 'iOS / iPadOS 26 的 Safari 支援 WebGPU（依報導，未查到 Apple 文件說明各機型限制，標為不確定）；所有 iOS 瀏覽器都使用同一個 WebKit 核心', '無法安裝 Ollama；可用 PocketPal、Locally AI 等 App', '不支援選擇資料夾，GGUF 會存到「檔案 › 下載項目」', '無法由網頁開啟資料夾，請到「檔案」App 查看'],
+    ['直接開啟 HTML 檔（file://）', 'Chrome 通常可用；Safari、部分 Android 瀏覽器可能停用 WebGPU 或儲存（不確定）', 'Ollama 需設定 OLLAMA_ORIGINS', '同上', '可嘗試直接點 file:/// 連結（僅部分瀏覽器）'],
+    ['放到 https 網址（建議）', '全部功能最穩定，手機可「加入主畫面」', '同上', '同上', '同上']
+  ];
+  $('platformTable').innerHTML = '<tr><th>平台</th><th>瀏覽器內建 AI（WebGPU）</th><th>本機 AI 程式</th><th>下載到裝置</th><th>開啟模型資料夾</th></tr>' + rows.map(r => '<tr>' + r.map((c,i)=> i ? `<td>${esc(c)}</td>` : `<td><b>${esc(c)}</b></td>`).join('') + '</tr>').join('');
+}
+
+/* ======================================================================
+   17. 外觀、網路狀態、全部資料備份
+   ====================================================================== */
+function applyUi(){
+  const r = document.documentElement;
+  if(state.ui.theme==='auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', state.ui.theme);
+  r.setAttribute('data-accent', state.ui.accent);
+  r.style.setProperty('--fs', state.ui.font + 'px'); $('fsVal').textContent = state.ui.font + 'px';
+  $('cfgTheme').value = state.ui.theme; $('cfgAccent').value = state.ui.accent; $('cfgFont').value = state.ui.font;
+  $('cfgZhTw').checked = state.ui.zhTw; $('cfgTts').checked = state.ui.tts; $('cfgEnterSend').checked = state.ui.enterSend;
+  $('cfgOllamaUrl').value = state.ui.ollamaUrl; $('cfgOaiUrl').value = state.ui.oaiUrl; $('cfgOaiKey').value = state.ui.oaiKey; $('cfgCacheBackend').value = state.ui.cacheBackend;
+  $('personaSel').value = state.ui.persona;
+  const dark = r.getAttribute('data-theme')==='dark' || (state.ui.theme==='auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.querySelector('meta[name=theme-color]').setAttribute('content', dark ? '#0d1117' : '#f6f7f9');
+}
+function updateNet(){ const on = navigator.onLine; $('netDot').className = 'dot ' + (on ? 'ok' : 'warn'); $('netText').textContent = on ? '在線' : '離線'; }
+function exportAll(){
+  const data = { app: APP_ID, kind:'full-backup', version: APP_VER, exportedAt: new Date().toISOString(), ui: Object.assign({}, state.ui, {oaiKey:''}), hwOverride: state.hwOverride, profiles: state.profiles, defaultProfileId: state.defaultProfileId, chats: state.chats, customPaths: customPaths() };
+  downloadText('離線AI工作台_全部備份_' + stamp() + '.json', JSON.stringify(data, null, 2), 'application/json');
+  toast('已匯出（API 金鑰不會被匯出）', 'ok');
+}
+async function importAll(text){
+  let d; try{ d = JSON.parse(text); }catch(e){ toast('不是有效的 JSON', 'bad'); return; }
+  if(d.kind === 'profiles' || (Array.isArray(d.profiles) && !d.chats)){ return importProfilesFromText(text); }
+  if(d.app !== APP_ID){ if(!await modal({title:'檔案來源不明', message:'這個檔案看起來不是本工具匯出的，仍要嘗試匯入嗎？'})) return; }
+  if(!await modal({title:'匯入全部資料？', message:'會取代目前的對話紀錄、設定檔與介面設定（模型檔不受影響）。', okText:'匯入', danger:true})) return;
+  if(d.ui) state.ui = Object.assign(clone(DEFAULT_UI), d.ui, {oaiKey: state.ui.oaiKey});
+  if(d.hwOverride) state.hwOverride = d.hwOverride;
+  if(Array.isArray(d.profiles)) state.profiles = d.profiles.filter(p=>p && p.id && p.name).map(p => ({id:p.id, name:String(p.name).slice(0,40), params: Object.assign(clone(state.reco.params), sanitizeParams(p.params||{})), createdAt:p.createdAt||Date.now()}));
+  if(d.defaultProfileId) state.defaultProfileId = d.defaultProfileId;
+  if(Array.isArray(d.chats)) state.chats = d.chats;
+  if(d.customPaths) lsSet('customPaths', d.customPaths);
+  state.activeProfileId = state.defaultProfileId;
+  saveUi(); lsSet('hwOverride', state.hwOverride); saveProfiles(); saveChats();
+  toast('匯入完成，重新載入中…', 'ok'); setTimeout(()=>location.reload(), 700);
+}
+
+/* ======================================================================
+   18. 事件綁定
+   ====================================================================== */
+function bind(){
+  // 全域委派：各種動態按鈕
+  document.addEventListener('click', async e => {
+    const t = e.target.closest('button,a'); if(!t) return;
+    const d = t.dataset;
+    if(d.webload !== undefined && d.webload){ state.ui.backend='webllm'; saveUi(); refreshChatModelSel(); switchTab('chat'); loadWebModel(d.webload); }
+    else if(d.pull){ const ok = await modal({title:'用 Ollama 下載', html:`將下載 <code>${esc(d.pull)}</code> 到 Ollama 的模型資料夾。需要電腦（或 Termux）上已啟動 Ollama。`, okText:'開始下載'}); if(ok){ switchTab('models'); ollamaPull(d.pull); } }
+    else if(d.hfrepo) hfFiles(d.hfrepo);
+    else if(d.hffiles) hfFiles(d.hffiles, d.box);
+    else if(d.gguf) downloadGguf(d.gguf, d.name, Number(d.size)||0);
+    else if(d.copy) copyText(d.copy);
+    else if(d.useOllama){ state.ui.backend='ollama'; state.ui.model.ollama = d.useOllama; saveUi(); refreshChatModelSel(); switchTab('chat'); toast('已切換到 Ollama · ' + d.useOllama, 'ok'); }
+    else if(d.delOllama){ if(await modal({title:'刪除 ' + d.delOllama + '？', message:'會從 Ollama 模型資料夾刪除，之後需重新下載。', danger:true, okText:'刪除'})){ try{ const r = await fetch(ollamaBase()+'/api/delete', {method:'DELETE', body: JSON.stringify({model:d.delOllama})}); if(!r.ok) throw new Error('HTTP '+r.status); toast('已刪除','ok'); }catch(err){ toast('刪除失敗：'+err.message,'bad'); } refreshOllama(); } }
+    else if(d.useOai){ state.ui.backend='openai'; state.ui.model.openai = d.useOai; saveUi(); refreshChatModelSel(); switchTab('chat'); }
+    else if(d.oai){ state.ui.oaiUrl = d.oai; $('cfgOaiUrl').value = d.oai; saveUi(); toast('已設定 ' + d.oai); }
+    else if(d.script) scriptClick(d.script, d.pk);
+    else if(d.editpath){ const os = state.ui.os; const e0 = PATHS[os].find(x=>x.k===d.editpath); const cp = customPaths(); const v = await modal({title:'自訂「' + e0.n + '」路徑', message:'留空可還原預設路徑。', input: cp[os+':'+d.editpath] || e0.p}); if(v !== null){ if(v.trim() && v.trim()!==e0.p) cp[os+':'+d.editpath] = v.trim(); else delete cp[os+':'+d.editpath]; lsSet('customPaths', cp); renderPaths(); } }
+    else if(d.exportcache) exportCacheModel(d.exportcache, d.repo);
+    else if(d.delcache) deleteCacheModel(d.delcache);
+    else if(d.quick) sendMessage(d.quick);
+    else if(d.copymsg !== undefined){ const m = activeChat().messages[+d.copymsg]; copyText(m.role==='assistant' ? stripThink(m.content) : m.content); }
+    else if(d.speak !== undefined) speak(stripThink(activeChat().messages[+d.speak].content));
+    else if(d.regen !== undefined){ const c = activeChat(); c.messages.pop(); sendMessage('', {regen:true}); }
+    else if(d.editmsg !== undefined){ const c = activeChat(); const i = +d.editmsg; const v = await modal({title:'編輯並重新送出', message:'之後的對話會被移除。', input: c.messages[i].content}); if(v){ c.messages = c.messages.slice(0, i); sendMessage(v); } }
+    else if(d.openchat){ state.activeChatId = d.openchat; saveChats(); renderMsgs(); renderHistory(); $('historyPanel').classList.add('hidden'); }
+    else if(d.delchat){ e.stopPropagation(); state.chats = state.chats.filter(c=>c.id!==d.delchat); if(state.activeChatId===d.delchat) state.activeChatId = (state.chats[0]||{}).id; saveChats(); renderHistory(); renderMsgs(); }
+    else if(d.tool) runTool(d.tool);
+  });
+  document.addEventListener('click', e => { const h = e.target.closest('[data-openchat]'); if(h && !e.target.closest('button')){ state.activeChatId = h.dataset.openchat; saveChats(); renderMsgs(); renderHistory(); $('historyPanel').classList.add('hidden'); } });
+
+  // 對話
+  $('btnSend').onclick = () => sendMessage();
+  $('btnStop').onclick = () => { if(state.abort) state.abort.abort(); };
+  $('chatInput').addEventListener('input', autoGrow);
+  $('chatInput').addEventListener('keydown', e => { if(e.key==='Enter' && !e.isComposing && ((state.ui.enterSend && !e.shiftKey) || e.ctrlKey || e.metaKey)){ e.preventDefault(); sendMessage(); } });
+  $('btnNewChat').onclick = () => { newChat(); renderMsgs(); renderHistory(); };
+  $('btnHistory').onclick = () => { renderHistory(); $('historyPanel').classList.toggle('hidden'); };
+  $('btnClearAllChats').onclick = async () => { if(await modal({title:'刪除全部對話？', message:'無法復原。', danger:true, okText:'全部刪除'})){ state.chats = []; newChat(); renderHistory(); renderMsgs(); } };
+  $('btnExportChat').onclick = exportChat;
+  $('btnAttach').onclick = () => $('attachInput').click();
+  $('attachInput').onchange = e => { const f = e.target.files[0]; if(!f) return; if(f.size > 2*1024*1024){ toast('檔案超過 2 MB，請先分段', 'warn'); return; } const rd = new FileReader(); rd.onload = () => { state.attach = {name:f.name, text:String(rd.result)}; $('attachName').textContent = '📎 ' + f.name + '（' + fmtBytes(f.size) + '）'; $('attachBar').classList.remove('hidden'); }; rd.readAsText(f); };
+  $('btnAttachClear').onclick = clearAttach;
+  $('btnMic').onclick = toggleMic;
+  $('backendSel').onchange = e => { state.ui.backend = e.target.value; saveUi(); if(state.ui.backend==='ollama') refreshOllama(true); if(state.ui.backend==='openai') refreshOai(); refreshChatModelSel(); renderMsgs(); };
+  $('chatModelSel').onchange = e => { const v = e.target.value; const be = state.ui.backend; state.ui.model[be] = v; saveUi(); if(be==='webllm' && v && v !== state.engineModelId) loadWebModel(v); updateEnginePill(); };
+  $('profileQuickSel').onchange = e => { state.activeProfileId = e.target.value; renderProfileSelects(); toast('本次使用「' + getProfile(state.activeProfileId).name + '」'); };
+  $('personaSel').onchange = e => { state.ui.persona = e.target.value; saveUi(); };
+  $('enginePill').onclick = () => switchTab('models');
+  $('netPill').onclick = () => toast(navigator.onLine ? '目前有網路，可搜尋與下載模型' : '目前離線，只能使用已下載的模型');
+
+  // 硬體
+  $('btnRescan').onclick = async () => { await detectHardware(); renderHw(); refreshChatModelSel(); toast('已重新偵測', 'ok'); };
+  $('btnCopyHw').onclick = () => { const h = state.hw; copyText(`裝置：${TYPE_NAME[h.type]} ${OS_NAME[h.os]} ${h.model} ${h.osVer}\n瀏覽器：${h.browser}\nRAM：${h.ram} GB（${h.ramSource}）\nGPU：${h.gpu||'無'} f16=${h.f16} 回退=${h.fallbackAdapter}\nVRAM：${h.vram||'未填'}\nCPU：${h.logical} 執行緒\n推薦等級：${state.reco.tierName}\nUA：${h.ua}`); };
+  $('btnApplyOv').onclick = async () => { state.hwOverride = { type: $('ovType').value || undefined, ram: $('ovRam').value || undefined, vram: $('ovVram').value === '' ? undefined : $('ovVram').value, cores: $('ovCores').value || undefined }; lsSet('hwOverride', state.hwOverride); await detectHardware(); renderHw(); refreshChatModelSel(); toast('已套用，推薦參數也同步更新', 'ok'); };
+  $('btnClearOv').onclick = async () => { state.hwOverride = {}; lsSet('hwOverride', {}); await detectHardware(); renderHw(); refreshChatModelSel(); };
+
+  // 模型下載
+  $('btnHfSearch').onclick = hfSearch;
+  $('hfQuery').addEventListener('keydown', e => { if(e.key==='Enter') hfSearch(); });
+  $('hotChips').innerHTML = ['Qwen3.5 GGUF','gemma-4 GGUF','Breeze','TAIDE','Llama 繁中','gpt-oss','DeepSeek R1','Phi-4'].map(q=>`<button class="btn sm ghost" data-hq="${esc(q)}">${esc(q)}</button>`).join('');
+  $('hotChips').onclick = e => { const b = e.target.closest('[data-hq]'); if(b){ $('hfQuery').value = b.dataset.hq; $('hfFormat').value = 'gguf'; hfSearch(); } };
+  $('btnWebllmAll').onclick = () => renderWebList(true);
+  $('btnRefreshCache').onclick = async () => { await refreshWebCache(); renderWebList(); renderHw(); refreshChatModelSel(); toast('已更新下載狀態'); };
+  $('btnOllamaRefresh').onclick = () => refreshOllama();
+  $('btnOllamaPull').onclick = () => ollamaPull($('ollamaPullName').value);
+  $('btnOaiRefresh').onclick = refreshOai;
+
+  // 參數
+  bindParamEvents();
+  $('profileSel').onchange = e => { state.activeProfileId = e.target.value; renderParams(); };
+  $('btnSetDefault').onclick = () => { state.defaultProfileId = state.activeProfileId; saveProfiles(); renderProfileSelects(); toast('「' + getProfile(state.defaultProfileId).name + '」已設為預設，下次開啟會自動套用', 'ok'); };
+  $('btnRestoreReco').onclick = async () => { const p = state.profiles.find(x=>x.id===state.activeProfileId); if(!p) return; if(await modal({title:'還原為推薦值？', message:'「' + p.name + '」的所有參數會改回依此裝置計算的推薦值。'})){ p.params = clone(state.reco.params); saveProfiles(); renderParams(); toast('已還原為推薦值', 'ok'); } };
+  $('btnNewProfile').onclick = async () => { const name = await modal({title:'另存新設定檔', message:'以目前參數為基礎建立：', input: getProfile(state.activeProfileId).name.replace('（依此裝置硬體）','') + ' 副本'}); if(!name) return; const p = {id:newId(), name: name.slice(0,40), params: clone(activeParams()), createdAt: Date.now()}; state.profiles.push(p); state.activeProfileId = p.id; saveProfiles(); renderParams(); };
+  $('btnRenameProfile').onclick = async () => { const p = state.profiles.find(x=>x.id===state.activeProfileId); if(!p) return; const n = await modal({title:'重新命名', input:p.name}); if(n){ p.name = n.slice(0,40); saveProfiles(); renderProfileSelects(); } };
+  $('btnDeleteProfile').onclick = async () => { const p = state.profiles.find(x=>x.id===state.activeProfileId); if(!p) return; if(await modal({title:'刪除「' + p.name + '」？', danger:true, okText:'刪除', message:'無法復原，建議先匯出。'})){ state.profiles = state.profiles.filter(x=>x!==p); if(state.defaultProfileId===p.id) state.defaultProfileId = 'reco'; state.activeProfileId = state.defaultProfileId; saveProfiles(); renderParams(); } };
+  $('btnExportProfile').onclick = () => { const p = getProfile(state.activeProfileId); exportProfiles([p], '參數設定檔_' + p.name.replace(/[\\/:*?"<>|（）() ]/g,'_') + '_' + stamp() + '.json'); };
+  $('btnExportAllProfiles').onclick = () => exportProfiles(allProfiles(), '參數設定檔_全部_' + stamp() + '.json');
+  $('btnImportProfiles').onclick = () => $('importProfilesInput').click();
+  $('importProfilesInput').onchange = e => { const f = e.target.files[0]; if(!f) return; f.text().then(importProfilesFromText); e.target.value=''; };
+  $('presetSeg').onclick = e => { const b = e.target.closest('[data-p]'); if(!b) return; const pr = SAMPLING_PRESETS[b.dataset.p]; Object.entries(pr).forEach(([k,v]) => setParam(k, v)); renderParams(); toast('已套用「' + b.textContent + '」取樣參數'); };
+  $('beFilterSeg').onclick = e => { const b = e.target.closest('[data-b]'); if(!b) return; state.paramFilter = b.dataset.b; renderParams(); };
+  const cfg = (id, key, after) => $(id).addEventListener('change', e => { state.ui[key] = e.target.type==='checkbox' ? e.target.checked : (e.target.type==='range' ? Number(e.target.value) : e.target.value.trim()); saveUi(); applyUi(); after && after(); });
+  cfg('cfgOllamaUrl','ollamaUrl', () => refreshOllama(true)); cfg('cfgOaiUrl','oaiUrl'); cfg('cfgOaiKey','oaiKey'); cfg('cfgCacheBackend','cacheBackend', () => toast('之後下載的瀏覽器模型會使用新的儲存方式；已下載的不會自動搬移', 'warn'));
+  cfg('cfgTheme','theme'); cfg('cfgAccent','accent'); cfg('cfgZhTw','zhTw'); cfg('cfgTts','tts'); cfg('cfgEnterSend','enterSend');
+  $('cfgFont').addEventListener('input', e => { state.ui.font = Number(e.target.value); applyUi(); saveUi(); });
+
+  // 儲存
+  $('osSeg').onclick = e => { const b = e.target.closest('[data-os]'); if(!b) return; state.ui.os = b.dataset.os; saveUi(); renderPaths(); };
+  $('fsaDesc').innerHTML = state.hw.fsa ? '選一個資料夾（例如 D:\\AI模型 或隨身碟），之後在「模型下載」按「下載到資料夾」就會直接存進去，中斷可續傳。瀏覽器會記住這個資料夾，但每次重新開啟可能需要再按一次允許。' : '此瀏覽器不支援指定下載資料夾（Safari、Firefox、iOS），GGUF 會存到瀏覽器預設的「下載」資料夾，路徑見上方。';
+  $('btnPickDlDir').onclick = async () => { if(!state.hw.fsa){ toast('此瀏覽器不支援', 'warn'); return; } try{ const h = await window.showDirectoryPicker({id:'ai-models', mode:'readwrite'}); await idb.set('dlDir', h); $('dlDirName').textContent = '目前：' + h.name; toast('已設定下載資料夾：' + h.name, 'ok'); }catch(e){} };
+  $('btnListDlDir').onclick = listDlDir;
+  $('btnBackupDir').onclick = backupDir;
+  $('btnPersist').onclick = async () => { if(!(navigator.storage && navigator.storage.persist)){ toast('此瀏覽器不支援', 'warn'); return; } const ok = await navigator.storage.persist(); state.hw.persisted = ok; toast(ok ? '已啟用永久儲存，系統空間不足時不會自動清除模型' : '瀏覽器拒絕（Chrome 會依使用頻率決定；可先把網站加入主畫面或書籤後再試）', ok?'ok':'warn'); renderCacheModels(); };
+  $('btnImportCache').onclick = importCacheModel;
+  $('btnClearCaches').onclick = async () => { if(!await modal({title:'清除全部瀏覽器模型？', message:'會刪除此網站在瀏覽器中下載的所有模型（可能數 GB），對話與設定不受影響。', danger:true, okText:'全部清除'})) return; try{ if(state.engine) await state.engine.unload(); }catch(e){} state.engine=null; state.engineModelId=null; for(const k of await caches.keys()) if(/webllm|tvm|mlc/i.test(k)) await caches.delete(k); try{ indexedDB.deleteDatabase('webllm/model'); indexedDB.deleteDatabase('webllm/config'); indexedDB.deleteDatabase('webllm/wasm'); }catch(e){} state.cachedWeb = {}; lsSet('cachedWeb', {}); renderCacheModels(); renderHw(); refreshChatModelSel(); toast('已清除', 'ok'); };
+  $('btnSaveEngine').onclick = async () => { if(!navigator.onLine){ toast('需要網路', 'warn'); return; } $('engineState').textContent = '下載中…'; try{ const r = await fetch(WEBLLM_URL); if(!r.ok) throw new Error('HTTP ' + r.status); const t = await r.text(); await idb.set('engine:' + WEBLLM_VER, t); toast('離線引擎已儲存', 'ok'); }catch(e){ toast('下載失敗：' + e.message, 'bad'); } renderEngineState(); };
+  $('btnDelEngine').onclick = async () => { await idb.del('engine:' + WEBLLM_VER); renderEngineState(); toast('已刪除'); };
+  $('btnExportAll').onclick = exportAll;
+  $('btnImportAll').onclick = () => $('importAllInput').click();
+  $('importAllInput').onchange = e => { const f = e.target.files[0]; if(f) f.text().then(importAll); e.target.value=''; };
+  $('btnFactory').onclick = async () => { if(!await modal({title:'還原出廠設定？', message:'會清除所有設定檔、介面設定、硬體校正與對話紀錄（模型檔不受影響）。建議先「匯出全部資料」。', danger:true, okText:'全部還原'})) return; Object.keys(localStorage).filter(k=>k.startsWith(LS)).forEach(k=>localStorage.removeItem(k)); location.reload(); };
+
+  // 工具
+  $('btnToolCopy').onclick = () => copyText($('toolOutput').value);
+
+  window.addEventListener('online', updateNet); window.addEventListener('offline', updateNet);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener && matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyUi);
+}
+
+/* ======================================================================
+   19. 啟動
+   ====================================================================== */
+async function init(){
+  buildNav();
+  state.cachedWeb = lsGet('cachedWeb', {});
+  await detectHardware();
+  if(!allProfiles().some(p=>p.id===state.defaultProfileId)) state.defaultProfileId = 'reco';
+  state.activeProfileId = state.defaultProfileId;
+  applyUi(); bind(); updateNet(); renderPlatformTable();
+  renderHw(); renderProfileSelects(); refreshChatModelSel(); renderMsgs();
+  const dir = await idb.get('dlDir'); if(dir) $('dlDirName').textContent = '目前：' + dir.name;
+  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if(TABS.some(t=>t[0]===h)) switchTab(h); });
+  const hashTab = location.hash.slice(1); switchTab(TABS.some(t=>t[0]===hashTab) ? hashTab : lsGet('tab', 'chat'));
+  $('sideFoot').textContent = `v${APP_VER} · 引擎 WebLLM ${WEBLLM_VER} · 資料 ${DATA_CHECKED_AT}`;
+  if(state.ui.backend==='ollama') refreshOllama(true);
+  if(state.ui.backend==='openai') refreshOai();
+  if(state.hw.webgpu && (await idb.get('engine:' + WEBLLM_VER) || navigator.onLine)){ refreshWebCache().then(() => { renderHw(); refreshChatModelSel(); }); }
+  window.__app = { state, computeReco, sanitizeParams, buildScript, quantOf, maskPII, md, PATHS }; // 方便除錯與測試
+}
+
+/* ======================================================================
+   20. 安裝成 App（PWA）：需放在 https 網址（或 localhost）才會啟用
+   ====================================================================== */
+let deferredInstall = null;
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+function setupPwa(){
+  if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.addEventListener('updatefound', () => { const w = reg.installing; w && w.addEventListener('statechange', () => { if(w.state==='installed' && navigator.serviceWorker.controller) toast('App 有新版本，重新開啟後套用', 'ok'); }); });
+    }).catch(() => {}); // 單獨開啟 HTML 時沒有 sw.js，忽略即可
+  }
+  const btn = $('btnInstall');
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; btn.classList.remove('hidden'); });
+  window.addEventListener('appinstalled', () => { btn.classList.add('hidden'); toast('已安裝到主畫面', 'ok'); });
+  const ios = state.hw && state.hw.os === 'ios';
+  if(ios && !isStandalone() && /^https:$/.test(location.protocol)) btn.classList.remove('hidden');
+  btn.onclick = async () => {
+    if(deferredInstall){ deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; btn.classList.add('hidden'); return; }
+    if(ios) modal({title:'安裝到 iPhone / iPad 主畫面', html:'1. 確認是用 <b>Safari</b> 開啟本頁<br>2. 點下方（iPad 在上方）的「分享」按鈕<br>3. 選「加入主畫面」，再按「加入」<br><br>之後請<b>從主畫面圖示開啟</b>，模型與設定才不會被 Safari 定期清除。', okText:'知道了', cancel:false});
+  };
+}
+init().then(setupPwa).catch(e => { console.error(e); toast('初始化失敗：' + e.message, 'bad'); });
+})();
+</script>
+</body>
+</html>
