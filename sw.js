@@ -1,6 +1,6 @@
 /* 萬用離線 AI 工作台 Service Worker：讓 App 斷網也能開啟。
    模型檔由 WebLLM 自己快取，這裡只處理 App 本體與推理引擎程式。 */
-const VERSION = 'aiwb-v1.0.2';
+const VERSION = 'aiwb-v1.0.3';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'];
 const LIB_CACHE = 'aiwb-lib';
 self.addEventListener('install', e => {

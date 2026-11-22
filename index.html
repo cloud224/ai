@@ -392,6 +392,7 @@ details.fold summary{cursor:pointer;font-weight:700;font-size:14px}
       <label class="field"><span class="lbl">相容 API 網址（含 /v1）</span><input class="input" id="cfgOaiUrl" placeholder="http://127.0.0.1:8080/v1"></label>
       <label class="field"><span class="lbl">相容 API 金鑰（選填，只存在本機）</span><input class="input" id="cfgOaiKey" type="password" autocomplete="off" placeholder="本機伺服器通常不需要"></label>
       <label class="field"><span class="lbl">瀏覽器模型儲存方式</span><select class="input" id="cfgCacheBackend"><option value="cache">Cache API（最穩定，預設）</option><option value="indexeddb">IndexedDB</option><option value="opfs">OPFS 私有檔案系統</option></select></label>
+      <label class="field"><span class="lbl">瀏覽器模型版本</span><select class="input" id="cfgWebPrecision"><option value="auto">自動（支援 f16 就用 f16，較小較快）</option><option value="f32">一律用 f32（相容性較好，檔案較大）</option></select></label>
     </div>
     <div class="row" style="margin-top:8px"><span class="mini">快速填入：</span>
       <button class="btn sm" data-oai="http://127.0.0.1:8080/v1">llama.cpp :8080</button>
@@ -654,7 +655,7 @@ function renderAnswer(text){
 /* ======================================================================
    2. 狀態
    ====================================================================== */
-const DEFAULT_UI = { theme:'auto', accent:'blue', font:15, zhTw:true, tts:false, enterSend:true, ollamaUrl:'http://127.0.0.1:11434', oaiUrl:'http://127.0.0.1:8080/v1', oaiKey:'', cacheBackend:'cache', backend:'webllm', model:{webllm:'', ollama:'', openai:''}, persona:'assistant', os:'' };
+const DEFAULT_UI = { theme:'auto', accent:'blue', font:15, zhTw:true, tts:false, enterSend:true, ollamaUrl:'http://127.0.0.1:11434', oaiUrl:'http://127.0.0.1:8080/v1', oaiKey:'', cacheBackend:'cache', webPrecision:'auto', backend:'webllm', model:{webllm:'', ollama:'', openai:''}, persona:'assistant', os:'' };
 const state = {
   ui: Object.assign(clone(DEFAULT_UI), lsGet('ui', {})),
   hwOverride: lsGet('hwOverride', {}),
@@ -773,9 +774,10 @@ function computeReco(hw){
   const tierName = ['入門','輕量','主流','進階','高階'][tier];
 
   const web = WEB_CATALOG.map(m => {
-    const usable = hw.webgpu && (hw.f16 || !m.noF32);
+    const useF32 = !hw.f16 || state.ui.webPrecision === 'f32';
+    const usable = hw.webgpu && (!useF32 || !m.noF32);
     let vram = m.vram; let id = m.id;
-    if(hw.webgpu && !hw.f16 && !m.noF32){ id = m.id.replace('q4f16_1','q4f32_1'); vram = m.vram32 || Math.round(m.vram * 1.2); }
+    if(hw.webgpu && useF32 && !m.noF32){ id = m.id.replace('q4f16_1','q4f32_1'); vram = m.vram32 || Math.round(m.vram * 1.2); }
     const fit = vram <= webBudget * 0.8 ? 'good' : vram <= webBudget ? 'ok' : 'tight';
     return Object.assign({}, m, {runId:id, runVram:vram, usable, fit});
   });
@@ -1600,7 +1602,7 @@ function updateEnginePill(){
 }
 function refreshChatModelSel(){
   const be = state.ui.backend; const sel = $('chatModelSel'); let opts = [];
-  if(be==='webllm'){ opts = state.reco.webSorted.map(m => [m.runId, m.name + (state.cachedWeb[m.runId]?'（已下載）':'') + (m.fit==='tight'?'（偏大）':'')]); if(state.engineModelId && !opts.some(o=>o[0]===state.engineModelId)) opts.unshift([state.engineModelId, state.engineModelId]); }
+  if(be==='webllm'){ opts = state.reco.webSorted.map(m => [m.runId, m.name + (/q4f32/.test(m.runId)?' f32':'') + (state.cachedWeb[m.runId]?'（已下載）':'') + (m.fit==='tight'?'（偏大）':'')]); Object.keys(state.cachedWeb).forEach(id => { if(!opts.some(o=>o[0]===id)) opts.unshift([id, id.replace(/-MLC$/,'') + '（已下載）']); }); if(state.engineModelId && !opts.some(o=>o[0]===state.engineModelId)) opts.unshift([state.engineModelId, state.engineModelId]); }
   else if(be==='ollama') opts = state.ollamaModels.map(m => [m.name, m.name]);
   else if(be==='openai') opts = state.oaiModels.map(id => [id, id]);
   const cur = state.ui.model[be];
@@ -1652,7 +1654,7 @@ function emptyReplyHelp(res){
     const ov = state.engineOpts && Object.keys(state.engineOpts).length;
     t += (ov ? `1. 到「參數」把「預填區塊大小」改成 0、「上下文長度」改大或改回推薦值，再重新載入模型（目前有覆寫：${JSON.stringify(state.engineOpts)}）；改完請重新整理頁面再載入\n` : '1. 按「＋ 新對話」再問一次（排除舊對話內容的影響）\n');
     if(/q4f16_1/.test(id)) t += `2. 改用 f32 版本：部分 Android 顯示晶片的半精度（f16）運算有問題，會造成沒有輸出。到「下載」頁按「列出全部可用模型」，選 \`${id.replace('q4f16_1','q4f32_1')}\`\n`;
-    t += '3. 換一個較小的模型（例如 Qwen3.5 2B），手機記憶體不足時也可能出現這個狀況\n4. 「參數」把「思考模式」改成「依模型預設」';
+    t += '3. 換一個較小的模型（例如 Qwen3.5 2B），手機記憶體不足時也可能出現這個狀況\n4. 「參數」把「思考模式」改成「依模型預設」\n5. 用 WebLLM 官方示範 [chat.webllm.ai](https://chat.webllm.ai) 選同一個模型測試：官方也沒輸出，代表是這支手機的瀏覽器或顯示晶片相容性問題；官方正常，請截圖告訴我';
   }else t += '1. 按「＋ 新對話」再問一次\n2. 確認伺服器端的模型能正常回覆（例如在終端機用 ollama run 測試）\n3. 檢查「停止詞」是否設得太短';
   return t;
 }
@@ -1731,7 +1733,7 @@ function applyUi(){
   r.style.setProperty('--fs', state.ui.font + 'px'); $('fsVal').textContent = state.ui.font + 'px';
   $('cfgTheme').value = state.ui.theme; $('cfgAccent').value = state.ui.accent; $('cfgFont').value = state.ui.font;
   $('cfgZhTw').checked = state.ui.zhTw; $('cfgTts').checked = state.ui.tts; $('cfgEnterSend').checked = state.ui.enterSend;
-  $('cfgOllamaUrl').value = state.ui.ollamaUrl; $('cfgOaiUrl').value = state.ui.oaiUrl; $('cfgOaiKey').value = state.ui.oaiKey; $('cfgCacheBackend').value = state.ui.cacheBackend;
+  $('cfgOllamaUrl').value = state.ui.ollamaUrl; $('cfgOaiUrl').value = state.ui.oaiUrl; $('cfgOaiKey').value = state.ui.oaiKey; $('cfgCacheBackend').value = state.ui.cacheBackend; $('cfgWebPrecision').value = state.ui.webPrecision || 'auto';
   $('personaSel').value = state.ui.persona;
   const dark = r.getAttribute('data-theme')==='dark' || (state.ui.theme==='auto' && matchMedia('(prefers-color-scheme: dark)').matches);
   document.querySelector('meta[name=theme-color]').setAttribute('content', dark ? '#0d1117' : '#f6f7f9');
@@ -1844,6 +1846,7 @@ function bind(){
   $('beFilterSeg').onclick = e => { const b = e.target.closest('[data-b]'); if(!b) return; state.paramFilter = b.dataset.b; renderParams(); };
   const cfg = (id, key, after) => $(id).addEventListener('change', e => { state.ui[key] = e.target.type==='checkbox' ? e.target.checked : (e.target.type==='range' ? Number(e.target.value) : e.target.value.trim()); saveUi(); applyUi(); after && after(); });
   cfg('cfgOllamaUrl','ollamaUrl', () => refreshOllama(true)); cfg('cfgOaiUrl','oaiUrl'); cfg('cfgOaiKey','oaiKey'); cfg('cfgCacheBackend','cacheBackend', () => toast('之後下載的瀏覽器模型會使用新的儲存方式；已下載的不會自動搬移', 'warn'));
+  cfg('cfgWebPrecision','webPrecision', () => { state.reco = computeReco(state.hw); renderHw(); refreshChatModelSel(); toast('已更新推薦清單，請重新選擇模型下載'); });
   cfg('cfgTheme','theme'); cfg('cfgAccent','accent'); cfg('cfgZhTw','zhTw'); cfg('cfgTts','tts'); cfg('cfgEnterSend','enterSend');
   $('cfgFont').addEventListener('input', e => { state.ui.font = Number(e.target.value); applyUi(); saveUi(); });
 
